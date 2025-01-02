@@ -3,9 +3,13 @@
   Se supone que es tenemos una empresa con diferentes almacenes separados. Cada almacén tiene un ordenador con el control de almacén propio. Son los nodos de una aplicación distribuida.
 
  Para simplificar he pensado hacer unas fases:
+ 
  fase 1: un servidor con una base de datos y un cliente.
+ 
  fase 2: más servidores, en una lista fija y conocida, y que los servidores de consulten
+ 
  fase 3: lista dinámica de servidores, posibilidad de altas, bajas, desconexiones, reconoexiones.
+ 
  fase 4: cliente gráfico,(si da tiempo)
  
  

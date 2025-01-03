@@ -11,7 +11,7 @@ except ImportError:
 def cliente():
     context = zmq.Context()
     socket = context.socket(zmq.REQ)  # REQ para enviar peticiones
-    socket.connect("tcp://localhost:5556")  # Conecta al servidor en el puerto 5555
+    socket.connect("tcp://localhost:5555")  # Conecta al servidor en el puerto 5555
 
     # Establecer un timeout de 5 segundos para las respuestas
     socket.setsockopt(zmq.RCVTIMEO, 5000)  # 5000 ms = 5 segundos

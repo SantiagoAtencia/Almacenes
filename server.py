@@ -1,11 +1,12 @@
 from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
-from datetime import datetime
+from datetime import datetime, timezone
 import zmq
 
 # Configuración de SQLAlchemy
 Base = declarative_base()
+
 
 class Inventario(Base):
     __tablename__ = 'inventario'
@@ -19,18 +20,20 @@ class Movimientos(Base):
     __tablename__ = 'movimientos'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    objeto = Column(String(70),ForeignKey('inventario.id'), nullable=False)
+    objeto = Column(String(70), ForeignKey('inventario.id'), nullable=False)
     tipo = Column(String(50), nullable=False)  # "entrada" o "salida"
     cantidad = Column(Integer, nullable=False)
-    fecha = Column(DateTime, default=datetime.utcnow, nullable=False)
+    fecha = Column(DateTime, default=datetime.now(timezone.utc), nullable=False)
 
     # Relación opcional para acceder al objeto Inventario asociado
     inventario = relationship('Inventario', backref='movimientos')
+
 
 # Crear conexión con la base de datos
 engine = create_engine('sqlite:///almacen.db')
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
+
 
 def manejar_mensaje(mensaje):
     session = Session()
@@ -41,7 +44,7 @@ def manejar_mensaje(mensaje):
         if accion == "añadir":
             nombre = comandos[1]
             cantidad = int(comandos[2])
-            
+
             # Verificar si el objeto ya existe en el inventario
             item = session.query(Inventario).filter_by(objeto=nombre).first()
             if item:
@@ -49,13 +52,13 @@ def manejar_mensaje(mensaje):
             else:
                 item = Inventario(objeto=nombre, cantidad=cantidad)
                 session.add(item)
-            
+
             # Registrar movimiento
             movimiento = Movimientos(
                 objeto=nombre,
                 tipo="entrada",
                 cantidad=cantidad,
-                fecha= datetime.utcnow()
+                fecha=datetime.now(timezone.utc)
             )
             session.add(movimiento)
             session.commit()
@@ -76,14 +79,14 @@ def manejar_mensaje(mensaje):
                 objeto=nombre,
                 tipo="salida",
                 cantidad=cantidad,
-                fecha= datetime.utcnow()
+                fecha=datetime.now(timezone.utc)
             )
             item.cantidad -= cantidad
             if item.cantidad == 0:
                 session.delete(item)  # Eliminar el objeto si la cantidad llega a 0
 
             # Registrar movimiento
-            
+
             session.add(movimiento)
             session.commit()
 
@@ -107,6 +110,7 @@ def manejar_mensaje(mensaje):
     finally:
         session.close()
 
+
 def servidor():
     context = zmq.Context()
     socket = context.socket(zmq.REP)  # REP para recibir peticiones y enviar respuestas
@@ -126,6 +130,6 @@ def servidor():
         except Exception as e:
             print(f"Error al procesar el mensaje: {e}")
 
+
 if __name__ == "__main__":
     servidor()
-

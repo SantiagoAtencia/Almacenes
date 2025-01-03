@@ -1,12 +1,14 @@
 # Cliente con ZeroMQ con interfaz gráfica para gestionar un almacén
 import zmq
 import zmq.error
+
 try:
     import tkinter as tk
     from tkinter import messagebox
 except ImportError:
     print("Error: La biblioteca 'tkinter' no está instalada. Por favor, instálala antes de continuar.")
     exit(1)
+
 
 def cliente():
     context = zmq.Context()
@@ -84,6 +86,7 @@ def cliente():
     boton_salir.pack(pady=5)
 
     ventana.mainloop()
+
 
 if __name__ == "__main__":
     cliente()

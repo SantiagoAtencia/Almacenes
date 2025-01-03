@@ -1,7 +1,8 @@
-import zmq
-from sqlalchemy import create_engine, Column, Integer, String
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, DateTime
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, relationship
+from datetime import datetime
+import zmq
 
 # Configuración de SQLAlchemy
 Base = declarative_base()
@@ -12,6 +13,19 @@ class Inventario(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     objeto = Column(String(70), nullable=False)
     cantidad = Column(Integer, nullable=False)
+
+
+class Movimientos(Base):
+    __tablename__ = 'movimientos'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    objeto = Column(String(70),ForeignKey('inventario.id'), nullable=False)
+    tipo = Column(String(50), nullable=False)  # "entrada" o "salida"
+    cantidad = Column(Integer, nullable=False)
+    fecha = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    # Relación opcional para acceder al objeto Inventario asociado
+    inventario = relationship('Inventario', backref='movimientos')
 
 # Crear conexión con la base de datos
 engine = create_engine('sqlite:///almacen.db')
@@ -35,6 +49,15 @@ def manejar_mensaje(mensaje):
             else:
                 item = Inventario(objeto=nombre, cantidad=cantidad)
                 session.add(item)
+            
+            # Registrar movimiento
+            movimiento = Movimientos(
+                objeto=nombre,
+                tipo="entrada",
+                cantidad=cantidad,
+                fecha= datetime.utcnow()
+            )
+            session.add(movimiento)
             session.commit()
 
             return f"Objeto {nombre} añadido con cantidad {cantidad}"
@@ -49,10 +72,19 @@ def manejar_mensaje(mensaje):
                 return f"Error: Objeto {nombre} no encontrado en el inventario"
             if item.cantidad < cantidad:
                 return f"Error: Cantidad insuficiente de {nombre} en el inventario"
-
+            movimiento = Movimientos(
+                objeto=nombre,
+                tipo="salida",
+                cantidad=cantidad,
+                fecha= datetime.utcnow()
+            )
             item.cantidad -= cantidad
             if item.cantidad == 0:
                 session.delete(item)  # Eliminar el objeto si la cantidad llega a 0
+
+            # Registrar movimiento
+            
+            session.add(movimiento)
             session.commit()
 
             return f"Objeto {nombre} retirado con cantidad {cantidad}"
@@ -78,7 +110,7 @@ def manejar_mensaje(mensaje):
 def servidor():
     context = zmq.Context()
     socket = context.socket(zmq.REP)  # REP para recibir peticiones y enviar respuestas
-    socket.bind("tcp://*:5556")  # Escuchar en el puerto 5555
+    socket.bind("tcp://*:5555")  # Escuchar en el puerto 5556
 
     print("Servidor iniciado y esperando mensajes...")
 
@@ -96,3 +128,4 @@ def servidor():
 
 if __name__ == "__main__":
     servidor()
+

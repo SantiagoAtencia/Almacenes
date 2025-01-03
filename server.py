@@ -3,6 +3,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime, timezone
 import zmq
+from colorama import Fore, Style
 
 # Configuración de SQLAlchemy
 Base = declarative_base()
@@ -14,13 +15,14 @@ class Inventario(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     objeto = Column(String(70), nullable=False)
     cantidad = Column(Integer, nullable=False)
+    stock_min = Column(Integer, default=5, nullable=False)
 
 
 class Movimientos(Base):
     __tablename__ = 'movimientos'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    objeto = Column(String(70), ForeignKey('inventario.id'), nullable=False)
+    objeto = Column(Integer, ForeignKey('inventario.id'), nullable=False)
     tipo = Column(String(50), nullable=False)  # "entrada" o "salida"
     cantidad = Column(Integer, nullable=False)
     fecha = Column(DateTime, default=datetime.now(timezone.utc), nullable=False)
@@ -42,8 +44,10 @@ def manejar_mensaje(mensaje):
         accion = comandos[0]
 
         if accion == "añadir":
-            nombre = comandos[1]
+            nombre = str(comandos[1]).strip()
             cantidad = int(comandos[2])
+
+
 
             # Verificar si el objeto ya existe en el inventario
             item = session.query(Inventario).filter_by(objeto=nombre).first()
@@ -52,12 +56,13 @@ def manejar_mensaje(mensaje):
             else:
                 item = Inventario(objeto=nombre, cantidad=cantidad)
                 session.add(item)
+                session.commit()
 
             # Registrar movimiento
             movimiento = Movimientos(
-                objeto=nombre,
+                objeto=item.id,
                 tipo="entrada",
-                cantidad=cantidad,
+                cantidad=item.cantidad,
                 fecha=datetime.now(timezone.utc)
             )
             session.add(movimiento)
@@ -66,7 +71,7 @@ def manejar_mensaje(mensaje):
             return f"Objeto {nombre} añadido con cantidad {cantidad}"
 
         elif accion == "sacar":
-            nombre = comandos[1]
+            nombre = str(comandos[1]).strip()
             cantidad = int(comandos[2])
 
             # Verificar si el objeto existe y tiene suficiente cantidad
@@ -76,9 +81,9 @@ def manejar_mensaje(mensaje):
             if item.cantidad < cantidad:
                 return f"Error: Cantidad insuficiente de {nombre} en el inventario"
             movimiento = Movimientos(
-                objeto=nombre,
+                objeto=item.id,
                 tipo="salida",
-                cantidad=cantidad,
+                cantidad=item.cantidad,
                 fecha=datetime.now(timezone.utc)
             )
             item.cantidad -= cantidad
@@ -97,7 +102,10 @@ def manejar_mensaje(mensaje):
             contenido = session.query(Inventario).all()
             resultado = "Contenido del almacén:\n"
             for item in contenido:
-                resultado += f"- {item.objeto}: {item.cantidad}\n"
+                resultado += f"- {item.objeto}: {item.cantidad}"
+                if item.cantidad <= item.stock_min:
+                    resultado += f" -> ¡Es necesario reponer!"
+                resultado += f"\n"
             return resultado.strip()
 
         else:

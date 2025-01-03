@@ -40,6 +40,16 @@ def cliente():
         respuesta = enviar_mensaje(mensaje)
         messagebox.showinfo("Respuesta del servidor", respuesta)
 
+    def reservar_objeto():
+        nombre = entrada_nombre.get()
+        cantidad = entrada_cantidad.get()
+        if not nombre or not cantidad.isdigit():
+            messagebox.showwarning("Advertencia", "Debes introducir un nombre y una cantidad válida.")
+            return
+        mensaje = f"reservar:{nombre}:{cantidad}"
+        respuesta = enviar_mensaje(mensaje)
+        messagebox.showinfo("Respuesta del servidor", respuesta)
+    
     def sacar_objeto():
         nombre = entrada_nombre.get()
         cantidad = entrada_cantidad.get()
@@ -47,6 +57,26 @@ def cliente():
             messagebox.showwarning("Advertencia", "Debes introducir un nombre y una cantidad válida.")
             return
         mensaje = f"sacar:{nombre}:{cantidad}"
+        respuesta = enviar_mensaje(mensaje)
+        messagebox.showinfo("Respuesta del servidor", respuesta)
+
+    def sacar_reserva():
+        nombre = entrada_nombre.get()
+        cantidad = entrada_cantidad.get()
+        if not nombre or not cantidad.isdigit():
+            messagebox.showwarning("Advertencia", "Debes introducir un nombre y una cantidad válida.")
+            return
+        mensaje = f"sacar reserva:{nombre}:{cantidad}"
+        respuesta = enviar_mensaje(mensaje)
+        messagebox.showinfo("Respuesta del servidor", respuesta)
+
+    def cancelar_reserva():
+        nombre = entrada_nombre.get()
+        cantidad = entrada_cantidad.get()
+        if not nombre or not cantidad.isdigit():
+            messagebox.showwarning("Advertencia", "Debes introducir un nombre y una cantidad válida.")
+            return
+        mensaje = f"cancelar reserva:{nombre}:{cantidad}"
         respuesta = enviar_mensaje(mensaje)
         messagebox.showinfo("Respuesta del servidor", respuesta)
 
@@ -76,6 +106,28 @@ def cliente():
 
     boton_sacar = tk.Button(ventana, text="Sacar objeto", command=sacar_objeto)
     boton_sacar.pack(pady=5)
+
+    boton_reservar = tk.Button(ventana, text="Reservar objeto", command=reservar_objeto)
+    boton_reservar.pack(pady=5) 
+
+
+    boton_sacar = tk.Button(ventana, text="Sacar reserva", command=sacar_reserva)
+    boton_sacar.pack(pady=5)
+
+    boton_reservar = tk.Button(ventana, text="Cancelar reservar objeto", command=cancelar_reserva)
+    boton_reservar.pack(pady=5) 
+
+
+    boton_ver = tk.Button(ventana, text="Ver almacén", command=ver_almacen)
+    boton_ver.pack(pady=5)
+
+    boton_salir = tk.Button(ventana, text="Salir", command=salir)
+    boton_salir.pack(pady=5)
+
+    ventana.mainloop()
+
+if __name__ == "__main__":
+    cliente()
 
     boton_ver = tk.Button(ventana, text="Ver almacén", command=ver_almacen)
     boton_ver.pack(pady=5)

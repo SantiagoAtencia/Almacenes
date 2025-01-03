@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, DateTime
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, DateTime, CheckConstraint
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from datetime import datetime, timezone, timedelta
 import zmq
@@ -18,7 +18,12 @@ class Inventario(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     objeto = Column(String(70), nullable=False)
-    cantidad = Column(Integer, nullable=False)
+    cantidad = Column(Integer,nullable=True, default=0)
+    reservados = Column(Integer,nullable=True, default=0)
+    CheckConstraint(
+        'cantidad IS NOT NULL OR reservados IS NOT NULL',
+        name='check_atributos_no_nulos'
+    )
 
 
 class Movimientos(Base):
@@ -26,10 +31,14 @@ class Movimientos(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     objeto = Column(String(70), ForeignKey('inventario.id'), nullable=False)
-    tipo = Column(String(50), nullable=False)  # "entrada" o "salida"
-    cantidad = Column(Integer, nullable=False)
+    tipo = Column(String(50), nullable=False)  # "entrada", "salida", "reserva", "cancelacion reserva", "sacar reserva" 
+    cantidad = Column(Integer, nullable=True,default=0)
+    reservados = Column(Integer,nullable=True,default=0)
     fecha = Column(DateTime, default=datetime.now(malaga_timezone), nullable=False)
-
+    CheckConstraint(
+        'cantidad IS NOT NULL OR reservados IS NOT NULL',
+        name='check_atributos_no_nulos'
+    )
     # Relación opcional para acceder al objeto Inventario asociado
     inventario = relationship('Inventario', backref='movimientos')
 
@@ -45,7 +54,7 @@ def manejar_mensaje(mensaje):
     try:
         comandos = mensaje.split(":")
         accion = comandos[0]
-
+        #### AÑADIR####
         if accion == "añadir":
             nombre = comandos[1]
             cantidad = int(comandos[2])
@@ -63,19 +72,22 @@ def manejar_mensaje(mensaje):
                 objeto=nombre,
                 tipo="entrada",
                 cantidad=cantidad,
+                reservados=item.reservados,
                 fecha=datetime.now(malaga_timezone)
             )
             session.add(movimiento)
             session.commit()
 
             return f"Objeto {nombre} añadido con cantidad {cantidad}"
-
+        #### SACAR####
         elif accion == "sacar":
             nombre = comandos[1]
             cantidad = int(comandos[2])
 
             # Verificar si el objeto existe y tiene suficiente cantidad
             item = session.query(Inventario).filter_by(objeto=nombre).first()
+            
+
             if not item:
                 return f"Error: Objeto {nombre} no encontrado en el inventario"
             if item.cantidad < cantidad:
@@ -84,10 +96,11 @@ def manejar_mensaje(mensaje):
                 objeto=nombre,
                 tipo="salida",
                 cantidad=cantidad,
+                reservados= item.reservados,
                 fecha=datetime.now(malaga_timezone)
             )
             item.cantidad -= cantidad
-            if item.cantidad == 0:
+            if item.cantidad  == 0 and item.reservados == 0:
                 session.delete(item)  # Eliminar el objeto si la cantidad llega a 0
 
             # Registrar movimiento
@@ -96,15 +109,101 @@ def manejar_mensaje(mensaje):
             session.commit()
 
             return f"Objeto {nombre} retirado con cantidad {cantidad}"
+        #### RESERVAR####
+        elif accion == "reservar":
+            nombre = comandos[1]
+            cantidad = int(comandos[2])
 
+            # Verificar si el objeto ya existe en el inventario
+            item = session.query(Inventario).filter_by(objeto=nombre).first()
+            if not item:
+                return f"Error: Objeto {nombre} no encontrado en el inventario"
+            if item.cantidad < cantidad:
+                return f"Error: Cantidad insuficiente de {nombre} en el inventario"
+            
+            item.cantidad -= cantidad
+            item.reservados += cantidad
+
+
+            # Registrar movimiento
+            movimiento = Movimientos(
+                objeto=nombre,
+                tipo="reserva",
+                cantidad=item.cantidad,
+                reservados=cantidad,
+                fecha=datetime.now(malaga_timezone)
+            )
+            session.add(movimiento)
+            session.commit()
+
+            return f"Objeto {nombre} añadido con cantidad {cantidad}"
+        #### SACAR RESERVA####
+        elif accion == "sacar reserva":
+            nombre = comandos[1]
+            cantidad = int(comandos[2])
+
+            # Verificar si el objeto existe y tiene suficiente cantidad
+            item = session.query(Inventario).filter_by(objeto=nombre).first()
+            
+
+            if not item:
+                return f"Error: Objeto {nombre} no encontrado en el inventario"
+            if item.reservados < cantidad:
+                return f"Error: Cantidad insuficiente de {nombre} en el inventario"
+            movimiento = Movimientos(
+                objeto=nombre,
+                tipo="entrega de la reserva",
+                cantidad=item.cantidad,
+                reservados=cantidad,
+                fecha=datetime.now(malaga_timezone)
+            )
+            item.reservados -= cantidad
+            if item.cantidad  == 0 and item.reservados == 0:
+                session.delete(item)  # Eliminar el objeto si la cantidad llega a 0
+
+            # Registrar movimiento
+
+            session.add(movimiento)
+            session.commit()
+
+            return f"Objeto {nombre} retirado con cantidad {cantidad}"
+        ####CANCELAR RESERVA####
+        elif accion == "cancelar reserva":
+            nombre = comandos[1]
+            cantidad = int(comandos[2])
+
+            # Verificar si el objeto existe y tiene suficiente cantidad
+            item = session.query(Inventario).filter_by(objeto=nombre).first()
+            
+
+            if not item:
+                return f"Error: Objeto {nombre} no encontrado en el inventario"
+            if item.reservados < cantidad:
+                return f"Error: Cantidad insuficiente de {nombre} en el inventario"
+            movimiento = Movimientos(
+                objeto=nombre,
+                tipo="cancelacion de la reserva",
+                cantidad=item.cantidad,
+                reservados=item.reservados,
+                fecha=datetime.now(malaga_timezone)
+            )
+            item.reservados -= cantidad
+            item.cantidad += cantidad
+
+            # Registrar movimiento
+
+            session.add(movimiento)
+            session.commit()
+
+            return f"Objeto {nombre} retirado con cantidad {cantidad}"
+        #### CONSULTAR####
         elif accion == "ver":
             # Mostrar el contenido del inventario
             contenido = session.query(Inventario).all()
             resultado = "Contenido del almacén:\n"
             for item in contenido:
-                resultado += f"- {item.objeto}: {item.cantidad}\n"
+                resultado += f"- {item.objeto}: {item.cantidad} reservados: {item.reservados}\n"
             return resultado.strip()
-
         else:
             return "Acción no reconocida"
 
@@ -138,4 +237,4 @@ def servidor():
 
 if __name__ == "__main__":
     servidor()
-
+    

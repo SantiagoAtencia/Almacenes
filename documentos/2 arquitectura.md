@@ -17,7 +17,7 @@
     ```
     data = {
         'command': 'inc',  # ejemplo de incrementar
-        'item': 'item_id',
+        'objeto': 'cepillo',
         'quantity': '14',
     }
     ``` 
@@ -27,9 +27,11 @@
  - GET para pedir datos.
     - Formato:
     ```
-    <URL>/item:id    # para pedir la cantidad de un item
+    <URL>/objetos/objeto:id     # para pedir la cantidad de un item
 
-    <URL>/           # para pedir el inventario completo
+    <URL>/objetos/              # para pedir el inventario completo
+
+    <URL>/                      # info del servicio
     ```
 
 ## StoreService
@@ -38,6 +40,7 @@ Servicio consistente en un programa Pyton. El programa, ejecuta en memoria 2 pro
 - El proceso hijo será el __DataServer__.
 
 El WebServer será el único cliente de DataServer. DataSever maneja su base de datos local. Sólo es accedido, únicamente, por su proceso padre, nada más. (expecto en fase de pruebas, que podremos usar un cliente de pruebas directo contra DataServer)
+
 ### WebServer
 Se implementa con el framework web FastAPI
 - Este framework directamente ejecuta el servidor we. Se han de definir las respuestas a las peticiones GET y POST, con funciones para cada caso.
@@ -55,6 +58,15 @@ Es un proceso corriendo con dos caras:
         - Terminal proceso.
         - Otros en sl futuro
     - Un objeto base de datos que encapsula todo lo relacionado. Sus métodos son las acciones de modificación, consulta, etc. Se le pasan los parámetros de consulta y devuelve objetos ORM.
+    #### Database
+     - Será un fichero único porque será SQLite.
+     - En principio en el directorio: `<app>/db_node1/almacen.sqlite`
+    - Tabla "artículos", con campos: 
+        - objeto
+        - cantidad
+    
+     (en esta versión, el fichero es fijo, en posteriores puede que haya más subdirestorios para poder tener más nodos por máquina)
+
 ### ZMQ
 - La comunicación entre los procesos será mediante ZMQ. Se usarán mensajes REQ-REP, que son los ideales aquí.
 - El cliente ZME, que es el WebServer, puede crear varias sesiones http en paralelo. Por lo que cada sesión puede pedir, por mensajes ZMQ, cosas al DataServer. ZMQ se encarga de encolar las peticiones y dejar las sesiones bloqueadas hasta que se le responda. (ver tema del timeout)
@@ -64,3 +76,7 @@ Es un proceso corriendo con dos caras:
 
 ## Despliege
 - Convendrá hacer un Makefile para que instale las librerías necesarias de python, tras hacer un entorno virtual, e instalar ZMQ.
+## Programas provisionales
+- Cliente ZMQ
+    - Un cliente provisional que ataca al Datasever para probar que funciona bien.
+    Es similar al programa completo del servicio pero en el proceso principal no tiene ningún servidor web

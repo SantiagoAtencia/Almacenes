@@ -8,7 +8,6 @@ import requests
 import threading
 import zmq
 
-
 # Configuración de Flask y SQLAlchemy
 app = Flask(__name__)
 
@@ -25,12 +24,14 @@ socket_pub = context.socket(zmq.PUB)
 # puerto_zmq = 5556  # Puerto para ZeroMQ PUB
 socket_pub.bind(f"tcp://*:{puerto_zmq}")
 
+
 class Inventario(Base):
     __tablename__ = 'inventario'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     objeto = Column(String(70), nullable=False)
     cantidad = Column(Integer, nullable=False)
+
 
 class Movimientos(Base):
     __tablename__ = 'movimientos'
@@ -44,13 +45,16 @@ class Movimientos(Base):
     # Relación opcional para acceder al objeto Inventario asociado
     inventario = relationship('Inventario', backref='movimientos')
 
+
 Base.metadata.create_all(engine)
 
 # Lista de nodos vecinos (puede ser cargada dinámicamente)
 nodos_vecinos = [
+    "http://localhost:5000",
     "http://localhost:5001",
     "http://localhost:5002"
 ]
+
 
 @app.route('/inventario/annadir', methods=['POST'])
 def annadir_objeto():
@@ -88,6 +92,7 @@ def annadir_objeto():
     finally:
         session.close()
 
+
 @app.route('/inventario/sacar', methods=['POST'])
 def sacar_objeto():
     """Sacar un objeto del inventario local."""
@@ -107,15 +112,13 @@ def sacar_objeto():
             cantidad=cantidad,
             fecha=datetime.now(timezone.utc)
         )
-        session.add(movimiento)
 
         item.cantidad -= cantidad
         if item.cantidad == 0:
             session.delete(item)
 
-        session.commit()
         # Registrar movimiento
-
+        session.add(movimiento)
         session.commit()
 
         notificar_vecinos()  # Notificar a los nodos vecinos
@@ -127,6 +130,7 @@ def sacar_objeto():
     finally:
         session.close()
 
+
 @app.route('/inventario/ver', methods=['GET'])
 def ver_inventario():
     """Ver el inventario local."""
@@ -137,6 +141,7 @@ def ver_inventario():
         return jsonify(resultado), 200
     finally:
         session.close()
+
 
 @app.route('/sincronizar', methods=['POST'])
 def sincronizar():
@@ -152,7 +157,7 @@ def sincronizar():
 
             item_local = session.query(Inventario).filter_by(objeto=nombre).first()
             if item_local:
-                item_local.cantidad = max(item_local.cantidad, cantidad)  # Sincronización simple
+                item_local.cantidad = cantidad  # Sincronización simple
             else:
                 nuevo_item = Inventario(objeto=nombre, cantidad=cantidad)
                 session.add(nuevo_item)
@@ -164,6 +169,7 @@ def sincronizar():
         return jsonify({"error": str(e)}), 500
     finally:
         session.close()
+
 
 def notificar_vecinos():
     """Notificar a los nodos vecinos para que se sincronicen."""
@@ -178,10 +184,12 @@ def notificar_vecinos():
             print(f"Error al notificar al nodo {nodo}: {e}")
     session.close()
 
+
 def enviar_evento_zmq(accion, nombre, cantidad):
     """Enviar un evento mediante ZeroMQ."""
     mensaje = f"{accion}:{nombre}:{cantidad}"
     socket_pub.send_string(mensaje)
+
 
 if __name__ == '__main__':
     # Ejecutar el servidor Flask en un hilo separado
@@ -192,7 +200,6 @@ if __name__ == '__main__':
     socket_sub = context.socket(zmq.SUB)
     socket_sub.connect(f"tcp://localhost:{puerto_zmq}")
     socket_sub.setsockopt_string(zmq.SUBSCRIBE, "")
-
 
 
     def recibir_eventos_zmq():
@@ -206,6 +213,7 @@ if __name__ == '__main__':
                 annadir_objeto_local(nombre, cantidad)
             elif accion == "sacar":
                 sacar_objeto_local(nombre, cantidad)
+
 
     def annadir_objeto_local(nombre, cantidad):
         """Añadir objeto localmente sin notificar vecinos."""
@@ -224,12 +232,13 @@ if __name__ == '__main__':
         finally:
             session.close()
 
+
     def sacar_objeto_local(nombre, cantidad):
         """Sacar objeto localmente sin notificar vecinos."""
         session = Session()
         try:
             item = session.query(Inventario).filter_by(objeto=nombre).first()
-            if item.cantidad >= cantidad:
+            if item and item.cantidad >= cantidad:
                 item.cantidad -= cantidad
                 if item.cantidad == 0:
                     session.delete(item)
@@ -239,6 +248,7 @@ if __name__ == '__main__':
             print(f"Error al sacar objeto localmente: {e}")
         finally:
             session.close()
+
 
     # Iniciar el hilo para recibir eventos de ZeroMQ
     threading.Thread(target=recibir_eventos_zmq, daemon=True).start()

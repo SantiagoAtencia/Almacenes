@@ -1,5 +1,6 @@
 # Cliente con ZeroMQ con interfaz gráfica para gestionar un almacén
 import requests
+
 try:
     import tkinter as tk
     from tkinter import messagebox
@@ -7,11 +8,19 @@ except ImportError:
     print("Error: La biblioteca 'tkinter' no está instalada. Por favor, instálala antes de continuar.")
     exit(1)
 
-BASE_URL = "http://localhost:5000"
+BASE_URL = str(input("Indica la dirección del nodo (ej. http://localhost:5000): "))
+
 
 def cliente():
+    def comprobacion(nombre, cantidad, peticion):
+        if not nombre or not cantidad.isdigit():
+            messagebox.showwarning("Advertencia", "Debes introducir un nombre y una cantidad válida.")
+            return
+        datos = {"nombre": nombre, "cantidad": int(cantidad)}
+        respuesta = enviar_peticion(f"/inventario/{peticion}", "POST", datos)
+        messagebox.showinfo("Respuesta del servidor", respuesta["mensaje"])
 
-    def enviar_peticion(endpoint, metodo="GET", datos = None):
+    def enviar_peticion(endpoint, metodo="GET", datos=None):
         try:
             url = f"{BASE_URL}/{endpoint}"
 
@@ -31,52 +40,27 @@ def cliente():
     def añadir_objeto():
         nombre = entrada_nombre.get()
         cantidad = entrada_cantidad.get()
-        if not nombre or not cantidad.isdigit():
-            messagebox.showwarning("Advertencia", "Debes introducir un nombre y una cantidad válida.")
-            return
-        datos = {"nombre": nombre, "cantidad": int(cantidad)}
-        respuesta = enviar_peticion("/inventario/annadir", "POST", datos)
-        messagebox.showinfo("Respuesta del servidor", respuesta["mensaje"])
+        comprobacion(nombre, cantidad, "annadir")
 
     def reservar_objeto():
         nombre = entrada_nombre.get()
         cantidad = entrada_cantidad.get()
-        if not nombre or not cantidad.isdigit():
-            messagebox.showwarning("Advertencia", "Debes introducir un nombre y una cantidad válida.")
-            return
-        datos = {"nombre": nombre, "cantidad": int(cantidad)}
-        respuesta = enviar_peticion("/inventario/reservar", "POST", datos)
-        messagebox.showinfo("Respuesta del servidor", respuesta["mensaje"])
-    
+        comprobacion(nombre, cantidad, "reservar")
+
     def sacar_objeto():
         nombre = entrada_nombre.get()
         cantidad = entrada_cantidad.get()
-        if not nombre or not cantidad.isdigit():
-            messagebox.showwarning("Advertencia", "Debes introducir un nombre y una cantidad válida.")
-            return
-        datos = {"nombre": nombre, "cantidad": int(cantidad)}
-        respuesta = enviar_peticion("/inventario/sacar", "POST", datos)
-        messagebox.showinfo("Respuesta del servidor", respuesta["mensaje"])
+        comprobacion(nombre, cantidad, "sacar")
 
     def sacar_reserva():
         nombre = entrada_nombre.get()
         cantidad = entrada_cantidad.get()
-        if not nombre or not cantidad.isdigit():
-            messagebox.showwarning("Advertencia", "Debes introducir un nombre y una cantidad válida.")
-            return
-        datos = {"nombre": nombre, "cantidad": int(cantidad)}
-        respuesta = enviar_peticion("/inventario/sacar_reserva", "POST", datos)
-        messagebox.showinfo("Respuesta del servidor", respuesta["mensaje"])
+        comprobacion(nombre, cantidad, "sacar_reserva")
 
     def cancelar_reserva():
         nombre = entrada_nombre.get()
         cantidad = entrada_cantidad.get()
-        if not nombre or not cantidad.isdigit():
-            messagebox.showwarning("Advertencia", "Debes introducir un nombre y una cantidad válida.")
-            return
-        datos = {"nombre": nombre, "cantidad": int(cantidad)}
-        respuesta = enviar_peticion("/inventario/cancelar_reserva", "POST", datos)
-        messagebox.showinfo("Respuesta del servidor", respuesta["mensaje"])
+        comprobacion(nombre, cantidad, "cancelar_reserva")
 
     def ver_almacen():
         respuesta = enviar_peticion("/inventario/ver", "GET")
@@ -108,15 +92,13 @@ def cliente():
     boton_sacar.pack(pady=5)
 
     boton_reservar = tk.Button(ventana, text="Reservar objeto", command=reservar_objeto)
-    boton_reservar.pack(pady=5) 
-
+    boton_reservar.pack(pady=5)
 
     boton_sacar = tk.Button(ventana, text="Sacar reserva", command=sacar_reserva)
     boton_sacar.pack(pady=5)
 
     boton_reservar = tk.Button(ventana, text="Cancelar reservar objeto", command=cancelar_reserva)
-    boton_reservar.pack(pady=5) 
-
+    boton_reservar.pack(pady=5)
 
     boton_ver = tk.Button(ventana, text="Ver almacén", command=ver_almacen)
     boton_ver.pack(pady=5)
@@ -125,6 +107,7 @@ def cliente():
     boton_salir.pack(pady=5)
 
     ventana.mainloop()
+
 
 if __name__ == "__main__":
     cliente()

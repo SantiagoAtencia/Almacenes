@@ -28,6 +28,7 @@ El usuario podrá hacer las siguientes operaciones
 
 ### Gestión interna:
  - Si al arrancar, no hay base de datos local, avisar la usuario y consultar para crear una nueva.
+ - (para V2): comprobar también que la base de datos esté correcta.
 
 
 ### Servicio:

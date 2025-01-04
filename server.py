@@ -1,8 +1,11 @@
+from flask import flask, request, jsonify
 from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime, timezone
 import zmq
+import threading
+import requests
 from colorama import Fore, Style
 
 # Configuración de SQLAlchemy

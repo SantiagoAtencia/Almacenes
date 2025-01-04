@@ -9,7 +9,7 @@ import time
 class ClienteP2P:
     def __init__(self, nodo_url):
         self.nodo_url = nodo_url
-        self.nodos_descubiertos = set([nodo_url])  # Almacena nodos descubiertos
+        self.nodos_descubiertos = {nodo_url}  # Almacena nodos descubiertos
         self.ventana = tk.Tk()
         self.ventana.title("Cliente P2P - Gestión de Inventario")
         self.crear_interfaz()
@@ -27,6 +27,9 @@ class ClienteP2P:
 
         tk.Button(self.ventana, text="Añadir objeto", command=self.annadir_objeto).pack(pady=5)
         tk.Button(self.ventana, text="Sacar objeto", command=self.sacar_objeto).pack(pady=5)
+        tk.Button(self.ventana, text="Reservar objeto", command=self.reservar).pack(pady=5)
+        tk.Button(self.ventana, text="Sacar reserva", command=self.sacar_reserva).pack(pady=5)
+        tk.Button(self.ventana, text="Cancelar reserva", command=self.cancelar_reserva).pack(pady=5)
         tk.Button(self.ventana, text="Ver inventario", command=self.ver_inventario).pack(pady=5)
         tk.Button(self.ventana, text="Sincronizar manualmente", command=self.sincronizar_manual).pack(pady=5)
         tk.Button(self.ventana, text="Salir", command=self.salir).pack(pady=5)
@@ -74,6 +77,54 @@ class ClienteP2P:
 
         datos = {"nombre": nombre, "cantidad": int(cantidad)}
         respuesta = self.enviar_peticion("inventario/sacar", metodo="POST", datos=datos)
+
+        if "error" in respuesta:
+            messagebox.showerror("Error", respuesta["error"])
+        else:
+            messagebox.showinfo("Éxito", respuesta["mensaje"])
+
+    def reservar(self):
+        nombre = self.entrada_nombre.get()
+        cantidad = self.entrada_cantidad.get()
+
+        if not nombre or not cantidad.isdigit():
+            messagebox.showwarning("Advertencia", "Debes introducir un nombre y una cantidad válida.")
+            return
+
+        datos = {"nombre": nombre, "cantidad": int(cantidad)}
+        respuesta = self.enviar_peticion("inventario/reservar", metodo="POST", datos=datos)
+
+        if "error" in respuesta:
+            messagebox.showerror("Error", respuesta["error"])
+        else:
+            messagebox.showinfo("Éxito", respuesta["mensaje"])
+
+    def sacar_reserva(self):
+        nombre = self.entrada_nombre.get()
+        cantidad = self.entrada_cantidad.get()
+
+        if not nombre or not cantidad.isdigit():
+            messagebox.showwarning("Advertencia", "Debes introducir un nombre y una cantidad válida.")
+            return
+
+        datos = {"nombre": nombre, "cantidad": int(cantidad)}
+        respuesta = self.enviar_peticion("inventario/sacar_reserva", metodo="POST", datos=datos)
+
+        if "error" in respuesta:
+            messagebox.showerror("Error", respuesta["error"])
+        else:
+            messagebox.showinfo("Éxito", respuesta["mensaje"])
+
+    def cancelar_reserva(self):
+        nombre = self.entrada_nombre.get()
+        cantidad = self.entrada_cantidad.get()
+
+        if not nombre or not cantidad.isdigit():
+            messagebox.showwarning("Advertencia", "Debes introducir un nombre y una cantidad válida.")
+            return
+
+        datos = {"nombre": nombre, "cantidad": int(cantidad)}
+        respuesta = self.enviar_peticion("inventario/cancelar_reserva", metodo="POST", datos=datos)
 
         if "error" in respuesta:
             messagebox.showerror("Error", respuesta["error"])

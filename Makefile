@@ -22,7 +22,7 @@ setup: $(VENV_DIR)/bin/activate
 
 # Target to run tests
 test: $(VENV_DIR)/bin/activate
-	$(ACTIVATE) && pytest -s --log-cli-level=DEBUG tests/tests_dataserver.py
+	pytest -s --log-cli-level=DEBUG tests\tests_dataserver.py
 
 
 .PHONY: setup

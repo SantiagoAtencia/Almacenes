@@ -9,6 +9,8 @@ Base = declarative_base()
 # Málaga tiene UTC +1 en horario estándar (invierno)
 malaga_timezone = timezone(timedelta(hours=1))  # UTC +1
 
+NODE_NAME = "nodo1"
+
 
 # O para el horario de verano (UTC +2)
 # malaga_timezone = timezone(timedelta(hours=2))  # UTC +2
@@ -18,8 +20,8 @@ class Inventario(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     objeto = Column(String(70), nullable=False)
-    cantidad = Column(Integer,nullable=True, default=0)
-    reservados = Column(Integer,nullable=True, default=0)
+    cantidad = Column(Integer, nullable=True, default=0)
+    reservados = Column(Integer, nullable=True, default=0)
     CheckConstraint(
         'cantidad IS NOT NULL OR reservados IS NOT NULL',
         name='check_atributos_no_nulos'
@@ -32,8 +34,8 @@ class Movimientos(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     objeto = Column(String(70), ForeignKey('inventario.id'), nullable=False)
     tipo = Column(String(50), nullable=False)  # "entrada", "salida", "reserva", "cancelacion reserva", "sacar reserva" 
-    cantidad = Column(Integer, nullable=True,default=0)
-    reservados = Column(Integer,nullable=True,default=0)
+    cantidad = Column(Integer, nullable=True, default=0)
+    reservados = Column(Integer, nullable=True, default=0)
     fecha = Column(DateTime, default=datetime.now(malaga_timezone), nullable=False)
     CheckConstraint(
         'cantidad IS NOT NULL OR reservados IS NOT NULL',
@@ -43,10 +45,20 @@ class Movimientos(Base):
     inventario = relationship('Inventario', backref='movimientos')
 
 
-# Crear conexión con la base de datos
-engine = create_engine('sqlite:///almacen.db')
-Base.metadata.create_all(engine)
-Session = sessionmaker(bind=engine)
+engine = create_engine(f'sqlite:///almacen.db')
+
+
+# Función para cambiar la base de datos y crear Session
+def cambiar_base_datos(nueva_bd):
+    global engine, Session
+    engine = create_engine(f'sqlite:///{nueva_bd}')
+    Base.metadata.create_all(engine)
+    Session = sessionmaker(bind=engine)
+    print(f"Base de datos cambiada a {nueva_bd}")
+
+
+# Inicializar la sesión con la base de datos por defecto
+cambiar_base_datos("almacen.db")
 
 
 def manejar_mensaje(mensaje):
@@ -86,7 +98,6 @@ def manejar_mensaje(mensaje):
 
             # Verificar si el objeto existe y tiene suficiente cantidad
             item = session.query(Inventario).filter_by(objeto=nombre).first()
-            
 
             if not item:
                 return f"Error: Objeto {nombre} no encontrado en el inventario"
@@ -96,11 +107,11 @@ def manejar_mensaje(mensaje):
                 objeto=nombre,
                 tipo="salida",
                 cantidad=cantidad,
-                reservados= item.reservados,
+                reservados=item.reservados,
                 fecha=datetime.now(malaga_timezone)
             )
             item.cantidad -= cantidad
-            if item.cantidad  == 0 and item.reservados == 0:
+            if item.cantidad == 0 and item.reservados == 0:
                 session.delete(item)  # Eliminar el objeto si la cantidad llega a 0
 
             # Registrar movimiento
@@ -120,10 +131,9 @@ def manejar_mensaje(mensaje):
                 return f"Error: Objeto {nombre} no encontrado en el inventario"
             if item.cantidad < cantidad:
                 return f"Error: Cantidad insuficiente de {nombre} en el inventario"
-            
+
             item.cantidad -= cantidad
             item.reservados += cantidad
-
 
             # Registrar movimiento
             movimiento = Movimientos(
@@ -144,7 +154,6 @@ def manejar_mensaje(mensaje):
 
             # Verificar si el objeto existe y tiene suficiente cantidad
             item = session.query(Inventario).filter_by(objeto=nombre).first()
-            
 
             if not item:
                 return f"Error: Objeto {nombre} no encontrado en el inventario"
@@ -158,7 +167,7 @@ def manejar_mensaje(mensaje):
                 fecha=datetime.now(malaga_timezone)
             )
             item.reservados -= cantidad
-            if item.cantidad  == 0 and item.reservados == 0:
+            if item.cantidad == 0 and item.reservados == 0:
                 session.delete(item)  # Eliminar el objeto si la cantidad llega a 0
 
             # Registrar movimiento
@@ -174,7 +183,6 @@ def manejar_mensaje(mensaje):
 
             # Verificar si el objeto existe y tiene suficiente cantidad
             item = session.query(Inventario).filter_by(objeto=nombre).first()
-            
 
             if not item:
                 return f"Error: Objeto {nombre} no encontrado en el inventario"
@@ -204,6 +212,23 @@ def manejar_mensaje(mensaje):
             for item in contenido:
                 resultado += f"- {item.objeto}: {item.cantidad} reservados: {item.reservados}\n"
             return resultado.strip()
+
+        elif accion == "get_item_quantity":
+            nombre = comandos[1]
+            item = session.query(Inventario).filter_by(objeto=nombre).first()
+            if not item:
+                return f"Error: Objeto {nombre} no encontrado en el inventario"
+
+            return item.cantidad
+
+        elif accion == "get_node_name":
+            return NODE_NAME
+
+        elif accion == "remove_db":
+            nombre = comandos[1]
+            cambiar_base_datos(f"{nombre}")
+            return f"New database {nombre}"
+
         else:
             return "Acción no reconocida"
 
@@ -237,4 +262,3 @@ def servidor():
 
 if __name__ == "__main__":
     servidor()
-    

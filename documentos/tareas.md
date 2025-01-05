@@ -3,15 +3,15 @@
 ## Fase 1
 
 ### - Especificación. Requisitos funcionales.
-- [ ] 1 Explicación con Detalle de lo que tiene que hacer desde el punto de vista del usuario. Todas las interacciones posibles, excepciones.
+- [x] 1 Explicación con Detalle de lo que tiene que hacer desde el punto de vista del usuario. Todas las interacciones posibles, excepciones.
 	
 ### - Diseño de arquitectura software.
-- [ ] 2 Detalle de todos los elementos software a urilizar. Tecnologías para cada elementos, frameworks, librerías, servicios. EConfiguración de cada una, puertos, directorios... Especificación de protocolos e interfaces a hacer: sintaxis de mensajes. Ej: mensajes REST, mensajes internos ZMQ...
+- [x] 2 Detalle de todos los elementos software a urilizar. Tecnologías para cada elementos, frameworks, librerías, servicios. EConfiguración de cada una, puertos, directorios... Especificación de protocolos e interfaces a hacer: sintaxis de mensajes. Ej: mensajes REST, mensajes internos ZMQ...
 	
 ### - Desarrollo de manejador de base de datos:
 	
   Es un proceso que maneja la base de datos con el ORM. Implementa un servidor ZMQ. PAra probarlo aisladamente, hacer un pequeño cliente ZMQ para hablar hacer las pruebas. Previamente se han tenido que definir lasintaxis de mensajes ZMQ.
-- [ ] 3.1 Definición de cliente de pruebas (=cliente ZMQ)y desarrollo del mismo. Batería de pruebas.
+- [x] 3.1 Definición de cliente de pruebas (=cliente ZMQ)y desarrollo del mismo. Batería de pruebas.
 - [ ] 3.2 Desarrollo de programa proceso manejador base de datos (=servidor ZMQ)
 - [ ] 3.3 Ejecutar cliente de pruebas contra el servidor, hasta pasar lo tests.
 	

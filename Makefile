@@ -20,4 +20,9 @@ $(VENV_DIR)/bin/python:
 setup: $(VENV_DIR)/bin/activate
 	$(ACTIVATE) && pip install -r requirements.txt
 
+# Target to run tests
+test: $(VENV_DIR)/bin/activate
+	$(ACTIVATE) && pytest -s --log-cli-level=DEBUG tests/tests_dataserver.py
+
+
 .PHONY: setup

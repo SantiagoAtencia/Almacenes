@@ -5,33 +5,52 @@ import zmq
 import pytest
 
 #constants:
+
 NODE_NAME = "node1"
-DB_PATH = f"/var/lib/cintrastore/{NODE_NAME}/almacen.db"
+DB_PATH = f"db/{NODE_NAME}/almacen.db"
 SOCKET_PATH = f"/tmp/almacen_{NODE_NAME}.sock"
-DATASERVER_PATH = "dataserver.py" #dataserver.py path, relative to the test file:
+DATASERVER_PATH = "../src/dataserver.py" #dataserver.py path, relative to the test file:
 
 ## configure the logging system to print to the console
 import logging
 import sys
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 # This fixture runs once before all tests in the file
 @pytest.fixture(scope="module", autouse=True)
-def setup_once():
-    logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+def socket():
+    print("en setup_once")
+    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+
     logging.info("Starting the tests")
     ## Test the dataserver
-    logging.info("Starting the dataserver")
-    child = subprocess.Popen(["python3", DATASERVER_PATH]) # Start the child process
-    time.sleep(1)                                   # Wait for the server to start
+    logging.debug("Starting the dataserver")
+    try:
+        child = subprocess.Popen(["python3", DATASERVER_PATH]) # Start the child process
+        time.sleep(1)                                   # Wait for the server to start
+    except Exception as e:
+        logging.debug(f"Error starting the dataserver: {e}")
+        logging.error(f"Error starting the dataserver: {e}")
+        raise e
+    
+    
     logging.info("Dataserver launched")
     # Create a ZeroMQ context, create a socket, and connect to the child's UNIX domain socket
     logging.info("Connecting to the dataserver with ZeroMQ")
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
-    socket.connect(f"ipc://{SOCKET_PATH}")
-    logging.info("Connected to the dataserver ZMQ socket")
-
+    try:
+        socket.connect(f"ipc://{SOCKET_PATH}")
+        # Set timeouts for send and receive operations
+        socket.setsockopt(zmq.SNDTIMEO, 2000)  # 2000 ms = 2 seconds
+        socket.setsockopt(zmq.RCVTIMEO, 2000)
+    except Exception as e:
+        logging.debug(f"Error connecting to the dataserver: {e}")
+        logging.error(f"Error connecting to the dataserver: {e}")
+        raise e
+    
+    logging.info(f"Connected to the dataserver ZMQ socket: {socket}")
     yield socket
 
     # This code runs after all tests have finished:
@@ -49,6 +68,7 @@ def setup_once():
 # tests:
 # test the connection to the server via zmq:
 def test_connection(socket):
+    logging.debug(f"soket: {socket}")
     socket.send_json({"command": "get_node_name"})
     response = socket.recv_json()
     assert response["node_name"] == NODE_NAME

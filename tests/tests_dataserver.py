@@ -152,7 +152,7 @@ def test_remove_more_items_than_inventory(socket):
     socket.send_json({"command": "dec", "objeto": "cabezas", "quantity": current_quantity + 1 })
     response = socket.recv_json()
     logging.debug(response)
-    assert response["resp"] == "Error"
+    assert response["resp"] == "ERRROR"
     
     # check that the quantity is the same   
     socket.send_json({"command": "get_item_quantity", "objeto": "cabezas"})

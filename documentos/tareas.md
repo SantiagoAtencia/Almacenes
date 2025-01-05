@@ -16,7 +16,7 @@
 - [ ] 3.3 Ejecutar cliente de pruebas contra el servidor, hasta pasar lo tests.
 	
 ### -  Desarrollo de Servdior REST
-- [ ] 4.1 Definición de cliente de pruebas. (=clinte REST). Batería de pruebas.
+- [x] 4.1 Definición de cliente de pruebas. (=clinte REST). Batería de pruebas.
 - [ ] 4.2 Desarrollo de servidor REST, (sin cliente ZMQ hasta que esté listo)
 - [ ] 4.3 Ejecución del cliente de pruebas.
 - [ ] 4.4 Integración de cliente ZMQ en el servidor.
@@ -43,28 +43,28 @@ _____ fase 1 completada ____
 
 ## Fase 2
 ### - Conseguir visivilidad de IPs por VPN
-- [ ]	Como en la VPN las IPs serán dinámicas, intentar con túneles SSH o un "pseudo DNS"
+- [ ]	8 Como en la VPN las IPs serán dinámicas, intentar con túneles SSH o un "pseudo DNS"
 	
 ### - Ampliación de programa para comunicación entre servidores
-- [ ]	Definición de pruebas para nuevas funciones
-- [ ]	Programación de nuevas funciones.
-- [ ]	Depliegue de servidores en una misma máquina.
-- [ ]	Pruebas con un cliente y varios clientes
-- [ ]	Pruebas de despliegue en máquinas diferentes (requiere tener funcionando VPN)
+- [ ]	9.1 Definición de pruebas para nuevas funciones
+- [ ]	9.2 Programación de nuevas funciones.
+- [ ]	9.3 Depliegue de servidores en una misma máquina.
+- [ ]	9.4 Pruebas con un cliente y varios clientes
+- [ ]	9.5 Pruebas de despliegue en máquinas diferentes (requiere tener funcionando VPN)
 
 ### - Depuración de programa, refactorización, documentación.
-- [ ] Depuración
+- [ ] 	10 Depuración
 _____ 	fase 2 completada _______
 ## Fase 3
 ### - Lista dinámica de servidores.
-- [ ] Definición de pruebas
-- [ ] Amplliar base de datos con tabla nueva de hosts
-- [ ] Ampliar servidor REST para que detecte desconexión, reconexión, alta de nodo, baja de nodo, consulta automática a vecinos, respuesta a vecinos, etc...
-- [ ] Implementar algoritmo de actualización automática de tabla, versionado, etc.
-- [ ] Ampliar cliente de usuario para permitir altas y bajas.
-- [ ] Pruebas
+- [ ] 11.1 Definición de pruebas
+- [ ] 11.2 Amplliar base de datos con tabla nueva de hosts
+- [ ] 11.3 Ampliar servidor REST para que detecte desconexión, reconexión, alta de nodo, baja de nodo, consulta automática a vecinos, respuesta a vecinos, etc...
+- [ ] 11.4 Implementar algoritmo de actualización automática de tabla, versionado, etc.
+- [ ] 11.5 Ampliar cliente de usuario para permitir altas y bajas.
+- [ ] 11.6 Pruebas
 	
 ### - Depuración de programa, refactorización, documentación.
-- [ ] Depuración
+- [ ] 12 Depuración
 _____ 	fase 3 completada _______
 	

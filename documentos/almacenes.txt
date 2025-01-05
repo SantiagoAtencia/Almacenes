@@ -1,0 +1,23 @@
+Especificaciones:
+
+-Programa distribuido de control de almacenes
+
+-Habra distintos almacenes cada uno sera un host con una base de datos local (nodo)
+
+-Cada uno en su base de datos tiene sus articulos propios
+
+-La aplicación identica en los nodos sera un servidor API REST
+
+-Por otro lado en cada almacen habra un cliente que se comunica mediante API REST con el propio nodo y con el resto.
+
+-En el propio servidor local podra hacer gestiones en su base de datos
+
+-En los remotos solo consultas
+
+-La base de datos se implementara con SQlite
+
+-Aparte cada nodo mantiene en su base de datos una lista de todos los nodos para saber los que se encuentra en la red lista de nombres y direcciones de red
+
+-Esa lista esta distribuida y debe estar sincornizada, cada vez que un nodo se da de alta o de baja se le añade o se le quita de la lista, y eso debe ser tolerante a fallos.
+
+-Cada nodo hace un broadcast periodico para asegurarse que esta en la ultima version

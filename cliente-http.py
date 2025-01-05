@@ -1,191 +1,113 @@
-# cliente_p2p.py
-
+# Cliente con ZeroMQ con interfaz gráfica para gestionar un almacén
 import requests
-import tkinter as tk
-from tkinter import messagebox
-import threading
-import time
 
-class ClienteP2P:
-    def __init__(self, nodo_url):
-        self.nodo_url = nodo_url
-        self.nodos_descubiertos = {nodo_url}  # Almacena nodos descubiertos
-        self.ventana = tk.Tk()
-        self.ventana.title("Cliente P2P - Gestión de Inventario")
-        self.crear_interfaz()
-        self.shutdown_flag = False  # Flag to stop threads gracefully
-        threading.Thread(target=self.descubrir_nodos_periodicamente, daemon=True).start()
+try:
+    import tkinter as tk
+    from tkinter import messagebox
+except ImportError:
+    print("Error: La biblioteca 'tkinter' no está instalada. Por favor, instálala antes de continuar.")
+    exit(1)
 
-    def crear_interfaz(self):
-        tk.Label(self.ventana, text="Nombre del objeto:").pack(pady=5)
-        self.entrada_nombre = tk.Entry(self.ventana, width=50)
-        self.entrada_nombre.pack(pady=5)
+BASE_URL = str(input("Indica la dirección del nodo (ej. http://localhost:5000): "))
 
-        tk.Label(self.ventana, text="Cantidad:").pack(pady=5)
-        self.entrada_cantidad = tk.Entry(self.ventana, width=50)
-        self.entrada_cantidad.pack(pady=5)
 
-        tk.Button(self.ventana, text="Añadir objeto", command=self.annadir_objeto).pack(pady=5)
-        tk.Button(self.ventana, text="Sacar objeto", command=self.sacar_objeto).pack(pady=5)
-        tk.Button(self.ventana, text="Reservar objeto", command=self.reservar).pack(pady=5)
-        tk.Button(self.ventana, text="Sacar reserva", command=self.sacar_reserva).pack(pady=5)
-        tk.Button(self.ventana, text="Cancelar reserva", command=self.cancelar_reserva).pack(pady=5)
-        tk.Button(self.ventana, text="Ver inventario", command=self.ver_inventario).pack(pady=5)
-        tk.Button(self.ventana, text="Sincronizar manualmente", command=self.sincronizar_manual).pack(pady=5)
-        tk.Button(self.ventana, text="Salir", command=self.salir).pack(pady=5)
+def cliente():
+    def comprobacion(nombre, cantidad, peticion):
+        if not nombre or not cantidad.isdigit():
+            messagebox.showwarning("Advertencia", "Debes introducir un nombre y una cantidad válida.")
+            return
+        datos = {"nombre": nombre, "cantidad": int(cantidad)}
+        respuesta = enviar_peticion(f"/inventario/{peticion}", "POST", datos)
+        messagebox.showinfo("Respuesta del servidor", respuesta["mensaje"])
 
-        self.ventana.mainloop()
-
-    def enviar_peticion(self, endpoint, metodo="GET", datos=None, nodo=None):
-        url = f"{nodo or self.nodo_url}/{endpoint}"
+    def enviar_peticion(endpoint, metodo="GET", datos=None):
         try:
-            if metodo == "POST":
-                respuesta = requests.post(url, json=datos)
+            url = f"{BASE_URL}/{endpoint}"
+
+            if metodo == "GET":
+                respuesta = requests.get(url, timeout=5)
+            elif metodo == "POST":
+                respuesta = requests.post(url, json=datos, timeout=5)
             else:
-                respuesta = requests.get(url)
+                raise ValueError("Método HTTP no soportado")
 
-            if respuesta.status_code == 200:
-                return respuesta.json()
-            else:
-                return {"error": respuesta.json().get("error", "Error desconocido")}
-        except requests.RequestException as e:
-            return {"error": str(e)}
+            return respuesta.json()
+        except requests.exceptions.Timeout:
+            return "Error: No se recibió respuesta del servidor (timeout)"
+        except requests.exceptions.RequestException as e:
+            return f"Error de conexión: {e}"
 
-    def annadir_objeto(self):
-        nombre = self.entrada_nombre.get()
-        cantidad = self.entrada_cantidad.get()
+    def añadir_objeto():
+        nombre = entrada_nombre.get()
+        cantidad = entrada_cantidad.get()
+        comprobacion(nombre, cantidad, "annadir")
 
-        if not nombre or not cantidad.isdigit():
-            messagebox.showwarning("Advertencia", "Debes introducir un nombre y una cantidad válida.")
-            return
+    def reservar_objeto():
+        nombre = entrada_nombre.get()
+        cantidad = entrada_cantidad.get()
+        comprobacion(nombre, cantidad, "reservar")
 
-        datos = {"nombre": nombre, "cantidad": int(cantidad)}
-        respuesta = self.enviar_peticion("inventario/annadir", metodo="POST", datos=datos)
+    def sacar_objeto():
+        nombre = entrada_nombre.get()
+        cantidad = entrada_cantidad.get()
+        comprobacion(nombre, cantidad, "sacar")
 
-        if "error" in respuesta:
-            messagebox.showerror("Error", respuesta["error"])
-        else:
-            messagebox.showinfo("Éxito", respuesta["mensaje"])
+    def sacar_reserva():
+        nombre = entrada_nombre.get()
+        cantidad = entrada_cantidad.get()
+        comprobacion(nombre, cantidad, "sacar_reserva")
 
-    def sacar_objeto(self):
-        nombre = self.entrada_nombre.get()
-        cantidad = self.entrada_cantidad.get()
+    def cancelar_reserva():
+        nombre = entrada_nombre.get()
+        cantidad = entrada_cantidad.get()
+        comprobacion(nombre, cantidad, "cancelar_reserva")
 
-        if not nombre or not cantidad.isdigit():
-            messagebox.showwarning("Advertencia", "Debes introducir un nombre y una cantidad válida.")
-            return
+    def ver_almacen():
+        respuesta = enviar_peticion("/inventario/ver", "GET")
+        contenido = "Contenido del inventario:\n"
+        for item in respuesta:
+            contenido += f"- {item['objeto']}: {item['cantidad']}\n"
+        messagebox.showinfo("Contenido del almacén", contenido)
 
-        datos = {"nombre": nombre, "cantidad": int(cantidad)}
-        respuesta = self.enviar_peticion("inventario/sacar", metodo="POST", datos=datos)
+    def salir():
+        ventana.quit()
+        ventana.destroy()
 
-        if "error" in respuesta:
-            messagebox.showerror("Error", respuesta["error"])
-        else:
-            messagebox.showinfo("Éxito", respuesta["mensaje"])
+    # Configuración de la interfaz gráfica
+    ventana = tk.Tk()
+    ventana.title("Cliente API REST - Gestión de Almacén")
 
-    def reservar(self):
-        nombre = self.entrada_nombre.get()
-        cantidad = self.entrada_cantidad.get()
+    tk.Label(ventana, text="Nombre del objeto:").pack(pady=5)
+    entrada_nombre = tk.Entry(ventana, width=50)
+    entrada_nombre.pack(pady=5)
 
-        if not nombre or not cantidad.isdigit():
-            messagebox.showwarning("Advertencia", "Debes introducir un nombre y una cantidad válida.")
-            return
+    tk.Label(ventana, text="Cantidad:").pack(pady=5)
+    entrada_cantidad = tk.Entry(ventana, width=50)
+    entrada_cantidad.pack(pady=5)
 
-        datos = {"nombre": nombre, "cantidad": int(cantidad)}
-        respuesta = self.enviar_peticion("inventario/reservar", metodo="POST", datos=datos)
+    boton_añadir = tk.Button(ventana, text="Añadir objeto", command=añadir_objeto)
+    boton_añadir.pack(pady=5)
 
-        if "error" in respuesta:
-            messagebox.showerror("Error", respuesta["error"])
-        else:
-            messagebox.showinfo("Éxito", respuesta["mensaje"])
+    boton_sacar = tk.Button(ventana, text="Sacar objeto", command=sacar_objeto)
+    boton_sacar.pack(pady=5)
 
-    def sacar_reserva(self):
-        nombre = self.entrada_nombre.get()
-        cantidad = self.entrada_cantidad.get()
+    boton_reservar = tk.Button(ventana, text="Reservar objeto", command=reservar_objeto)
+    boton_reservar.pack(pady=5)
 
-        if not nombre or not cantidad.isdigit():
-            messagebox.showwarning("Advertencia", "Debes introducir un nombre y una cantidad válida.")
-            return
+    boton_sacar = tk.Button(ventana, text="Sacar reserva", command=sacar_reserva)
+    boton_sacar.pack(pady=5)
 
-        datos = {"nombre": nombre, "cantidad": int(cantidad)}
-        respuesta = self.enviar_peticion("inventario/sacar_reserva", metodo="POST", datos=datos)
+    boton_reservar = tk.Button(ventana, text="Cancelar reservar objeto", command=cancelar_reserva)
+    boton_reservar.pack(pady=5)
 
-        if "error" in respuesta:
-            messagebox.showerror("Error", respuesta["error"])
-        else:
-            messagebox.showinfo("Éxito", respuesta["mensaje"])
+    boton_ver = tk.Button(ventana, text="Ver almacén", command=ver_almacen)
+    boton_ver.pack(pady=5)
 
-    def cancelar_reserva(self):
-        nombre = self.entrada_nombre.get()
-        cantidad = self.entrada_cantidad.get()
+    boton_salir = tk.Button(ventana, text="Salir", command=salir)
+    boton_salir.pack(pady=5)
 
-        if not nombre or not cantidad.isdigit():
-            messagebox.showwarning("Advertencia", "Debes introducir un nombre y una cantidad válida.")
-            return
+    ventana.mainloop()
 
-        datos = {"nombre": nombre, "cantidad": int(cantidad)}
-        respuesta = self.enviar_peticion("inventario/cancelar_reserva", metodo="POST", datos=datos)
-
-        if "error" in respuesta:
-            messagebox.showerror("Error", respuesta["error"])
-        else:
-            messagebox.showinfo("Éxito", respuesta["mensaje"])
-
-    def ver_inventario(self):
-        respuesta = self.enviar_peticion("inventario/ver")
-
-        if "error" in respuesta:
-            messagebox.showerror("Error", respuesta["error"])
-        else:
-            contenido = respuesta
-            resultado = "Contenido del inventario:\n"
-            for item in contenido:
-                resultado += f"- {item['objeto']}: {item['cantidad']}\n"
-            messagebox.showinfo("Inventario", resultado)
-
-    def sincronizar_manual(self):
-        """Sincroniza manualmente el inventario con todos los nodos descubiertos."""
-        for nodo in self.nodos_descubiertos:
-            if nodo != self.nodo_url:  # Evita sincronizar consigo mismo
-                respuesta = self.enviar_peticion("inventario/ver", nodo=nodo)
-                if "error" in respuesta:
-                    print(f"Error al sincronizar con {nodo}: {respuesta['error']}")
-                else:
-                    self.sincronizar_inventario_local(respuesta)
-        messagebox.showinfo("Sincronización", "Sincronización manual completada.")
-
-    def sincronizar_inventario_local(self, inventario_remoto):
-        """Actualiza el inventario local según el inventario remoto recibido."""
-        session_inventario = {item['objeto']: item['cantidad'] for item in inventario_remoto}
-        respuesta_local = self.enviar_peticion("inventario/ver")
-        if "error" not in respuesta_local:
-            for item in respuesta_local:
-                nombre = item['objeto']
-                cantidad = item['cantidad']
-                if nombre in session_inventario:
-                    session_inventario[nombre] = max(session_inventario[nombre], cantidad)
-        for nombre, cantidad in session_inventario.items():
-            self.enviar_peticion("inventario/annadir", metodo="POST", datos={"nombre": nombre, "cantidad": cantidad})
-
-    def descubrir_nodos_periodicamente(self):
-        """Descubre nodos vecinos periódicamente cada 30 segundos."""
-        while not self.shutdown_flag:
-            for nodo in list(self.nodos_descubiertos):
-                try:
-                    respuesta = self.enviar_peticion("nodos", nodo=nodo)
-                    if "error" not in respuesta:
-                        nuevos_nodos = respuesta.get("nodos", [])
-                        self.nodos_descubiertos.update(nuevos_nodos)
-                except Exception as e:
-                    print(f"Error al descubrir nodos desde {nodo}: {e}")
-            time.sleep(30)
-
-    def salir(self):
-        """Gracefully exit and stop threads."""
-        self.shutdown_flag = True  # Set the shutdown flag to stop threads
-        self.ventana.quit()  # Close the Tkinter window
-        self.ventana.destroy()  # Properly clean up the Tkinter window
 
 if __name__ == "__main__":
-    nodo_url = input("Ingrese la URL del nodo (ej. http://localhost:5000): ")
-    ClienteP2P(nodo_url)
+    cliente()

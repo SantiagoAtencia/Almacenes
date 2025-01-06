@@ -1,5 +1,4 @@
-# Almacenes ??nombre?? -  Especificaciones v1
-(hay que ponerle algún nombre al la aplicación)
+# Almacenes Cintrastore -  Especificaciones v1
 
 (en esta versión sólo unas especificaciones básicas, ya se ampliará)
 
@@ -25,6 +24,8 @@ El usuario podrá hacer las siguientes operaciones
  Si se intenta restar más de lo que hay: error.
  - Consultar la cantidad de un artículo concreto.
  - Consultar listado completo de inventario local.
+ - (para v2) Consultar la cantidad de un artículo en el resto de nodos
+ - (para v2) Consultar inventario completo de todos los nodos
 
 ### Gestión interna:
  - Si al arrancar, no hay base de datos local, avisar la usuario y consultar para crear una nueva.

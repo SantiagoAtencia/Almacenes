@@ -9,7 +9,7 @@ app = Flask(__name__, template_folder='../templates')
 def enviar_mensaje(mensaje_dict):
     context = zmq.Context()
     socket = context.socket(zmq.REQ)  # REQ para enviar peticiones
-    socket.connect("tcp://localhost:5555")  # Conecta al servidor en el puerto 5555
+    socket.connect("ipc:///tmp/almacen.sock")  # Conecta al servidor en el puerto 5555
 
     # Establecer un timeout de 5 segundos para las respuestas
     socket.setsockopt(zmq.RCVTIMEO, 5000)  # 5000 ms = 5 segundos

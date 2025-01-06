@@ -287,10 +287,6 @@ if __name__ == "__main__":
     # Parsear argumentos de línea de comandos
     parser = argparse.ArgumentParser(description="Iniciar servidor de inventario.")
     parser.add_argument(
-        "directorio",
-        help="Directorio donde se almacenará la base de datos y el socket Unix"
-    )
-    parser.add_argument(
         "--node-name",
         required=True,
         help="Nombre del nodo (NODE_NAME)"
@@ -298,12 +294,13 @@ if __name__ == "__main__":
     args = parser.parse_args()
     NODE_NAME = args.node_name
     # Crear el directorio si no existe
-    os.makedirs(args.directorio, exist_ok=True)
+    os.makedirs(f"./database_{NODE_NAME}", exist_ok=True)
 
     # Configurar la base de datos
-    db_path = os.path.join(args.directorio, "almacen.db")
+    db_path = os.path.join(f"./database_{NODE_NAME}", "almacen.db")
     cambiar_base_datos(db_path)
 
     # Configurar el socket Unix
     socket_path = f"/tmp/almacen_{NODE_NAME}.sock"
     servidor(socket_path)
+

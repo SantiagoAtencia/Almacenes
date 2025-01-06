@@ -301,6 +301,6 @@ if __name__ == "__main__":
     cambiar_base_datos(db_path)
 
     # Configurar el socket Unix
-    socket_path = "/tmp/almacen.sock"
+    socket_path = f"/tmp/almacen_{NODE_NAME}.sock"
     servidor(socket_path)
 

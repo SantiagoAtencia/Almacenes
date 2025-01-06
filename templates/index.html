@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Almacén</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        label, input, button {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+        }
+        button {
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .content {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Gestión de Almacén</h1>
+
+        <label for="nombre">Nombre del objeto:</label>
+        <input type="text" id="nombre" placeholder="Ingrese el nombre del objeto">
+
+        <label for="cantidad">Cantidad:</label>
+        <input type="number" id="cantidad" placeholder="Ingrese la cantidad">
+
+        <button onclick="añadirObjeto()">Añadir objeto</button>
+        <button onclick="reservarObjeto()">Reservar objeto</button>
+        <button onclick="sacarObjeto()">Sacar objeto</button>
+        <button onclick="sacarReserva()">Sacar reserva</button>
+        <button onclick="cancelarReserva()">Cancelar reserva</button>
+        <button onclick="verAlmacen()">Ver inventario</button>
+
+        <div class="content" id="contenido"></div>
+    </div>
+
+    <script>
+        const BASE_URL = "http://localhost:5000"; // Cambia esto si tu servidor está en otro puerto o URL
+
+        async function enviarPeticion(endpoint, metodo = "GET", datos = null) {
+            const url = `${BASE_URL}${endpoint}`;
+            const opciones = {
+                method: metodo,
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: datos ? JSON.stringify(datos) : null
+            };
+
+            try {
+                const respuesta = await fetch(url, opciones);
+                const data = await respuesta.json();
+                return data;
+            } catch (error) {
+                console.error("Error de conexión:", error);
+                alert("Hubo un problema al comunicarse con el servidor.");
+                return null;
+            }
+        }
+
+        function mostrarMensaje(mensaje) {
+            document.getElementById("contenido").innerHTML = `<p>${mensaje}</p>`;
+        }
+
+        async function añadirObjeto() {
+            const nombre = document.getElementById("nombre").value;
+            const cantidad = document.getElementById("cantidad").value;
+            if (!nombre || !cantidad) {
+                mostrarMensaje("Por favor, ingrese un nombre y una cantidad.");
+                return;
+            }
+            const respuesta = await enviarPeticion("/inventario/annadir", "POST", { nombre, cantidad });
+            if (respuesta ) {
+                mostrarMensaje(respuesta.mensaje);
+            }
+            await verAlmacen();
+        }
+
+        async function reservarObjeto() {
+            const nombre = document.getElementById("nombre").value;
+            const cantidad = document.getElementById("cantidad").value;
+            if (!nombre || !cantidad) {
+                mostrarMensaje("Por favor, ingrese un nombre y una cantidad.");
+                return;
+            }
+            const respuesta = await enviarPeticion("/inventario/reservar", "POST", { nombre, cantidad });
+            if (respuesta ) {
+                mostrarMensaje(respuesta.mensaje);
+            }
+            await verAlmacen();
+        }
+
+        async function sacarObjeto() {
+            const nombre = document.getElementById("nombre").value;
+            const cantidad = document.getElementById("cantidad").value;
+            if (!nombre || !cantidad) {
+                mostrarMensaje("Por favor, ingrese un nombre y una cantidad.");
+                return;
+            }
+            const respuesta = await enviarPeticion("/inventario/sacar", "POST", { nombre, cantidad });
+            if (respuesta ) {
+                mostrarMensaje(respuesta.mensaje);
+            }
+            await verAlmacen();
+        }
+
+        async function sacarReserva() {
+            const nombre = document.getElementById("nombre").value;
+            const cantidad = document.getElementById("cantidad").value;
+            if (!nombre || !cantidad) {
+                mostrarMensaje("Por favor, ingrese un nombre y una cantidad.");
+                return;
+            }
+            const respuesta = await enviarPeticion("/inventario/sacar_reserva", "POST", { nombre, cantidad });
+            if (respuesta ) {
+                mostrarMensaje(respuesta.mensaje);
+            }
+            await verAlmacen();
+        }
+
+        async function cancelarReserva() {
+            const nombre = document.getElementById("nombre").value;
+            const cantidad = document.getElementById("cantidad").value;
+            if (!nombre || !cantidad) {
+                mostrarMensaje("Por favor, ingrese un nombre y una cantidad.");
+                return;
+            }
+            const respuesta = await enviarPeticion("/inventario/cancelar_reserva", "POST", { nombre, cantidad });
+            if (respuesta ) {
+                mostrarMensaje(respuesta.mensaje);
+            }
+            await verAlmacen();
+        }
+
+        async function verAlmacen() {
+            const respuesta = await enviarPeticion("/inventario/ver", "GET");
+            if (respuesta && Array.isArray(respuesta.inventario)) {
+                let contenido = "<h3>Contenido del inventario:</h3>";
+                respuesta.inventario.forEach(item => {
+                    contenido += `<p>${item.nombre}: ${item.cantidad} |reservados: ${item.reservados}</p>`;
+                });
+                document.getElementById("contenido").innerHTML = contenido;
+            } else {
+                mostrarMensaje("No se pudo obtener el contenido del inventario.");
+            }
+        }
+    </script>
+</body>
+</html>

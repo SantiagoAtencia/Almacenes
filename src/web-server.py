@@ -149,7 +149,6 @@ def remove_db():
 
 
 if __name__ == "__main__":
-    puerto = int(input("Introduce un puerto para el nodo: "))
     parser = argparse.ArgumentParser(description="Iniciar servidor de inventario.")
     parser.add_argument(
         "--node-name",
@@ -158,4 +157,5 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     NODE_NAME = args.node_name
+    puerto = int(input("Introduce un puerto para el nodo: "))
     app.run(port=puerto)

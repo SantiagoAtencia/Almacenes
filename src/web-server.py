@@ -1,6 +1,8 @@
 import zmq
 import zmq.error
 import json
+import os
+import argparse
 from flask import Flask, request, jsonify, render_template
 
 app = Flask(__name__, template_folder='../templates')
@@ -9,7 +11,7 @@ app = Flask(__name__, template_folder='../templates')
 def enviar_mensaje(mensaje_dict):
     context = zmq.Context()
     socket = context.socket(zmq.REQ)  # REQ para enviar peticiones
-    socket.connect("ipc:///tmp/almacen.sock")  # Conecta al servidor en el puerto 5555
+    socket.connect(f"ipc:///tmp/almacen_{NODE_NAME}.sock")  # Conecta al servidor en el puerto 5555
 
     # Establecer un timeout de 5 segundos para las respuestas
     socket.setsockopt(zmq.RCVTIMEO, 5000)  # 5000 ms = 5 segundos
@@ -148,4 +150,12 @@ def remove_db():
 
 if __name__ == "__main__":
     puerto = int(input("Introduce un puerto para el nodo: "))
+    parser = argparse.ArgumentParser(description="Iniciar servidor de inventario.")
+    parser.add_argument(
+        "--node-name",
+        required=True,
+        help="Nombre del nodo (NODE_NAME)"
+    )
+    args = parser.parse_args()
+    NODE_NAME = args.node_name
     app.run(port=puerto)

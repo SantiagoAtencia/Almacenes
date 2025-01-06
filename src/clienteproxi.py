@@ -1,5 +1,6 @@
 import requests
-
+import os
+import argparse
 class Inventario:
     def __init__(self, base_url):
         self.base_url = base_url
@@ -68,7 +69,7 @@ class Inventario:
 
 class AlmacenCliente:
     def __init__(self):
-        self.inventario = Inventario("http://127.0.0.1:5000")
+        self.inventario = Inventario(f"http://127.0.0.1:{PORT_TCP}")
         print("Cliente de Gestión de Almacén iniciado.")
 
     def menu(self):
@@ -124,5 +125,14 @@ class AlmacenCliente:
                 print("Opción inválida. Inténtalo de nuevo.")
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Iniciar servidor de inventario.")
+    parser.add_argument(
+        "--port-tcp",
+        required=True,
+        help="Puerto TCP --port-tcp"
+    )
+    args = parser.parse_args()
+    PORT_TCP = args.port_tcp
+
     cliente = AlmacenCliente()
     cliente.menu()

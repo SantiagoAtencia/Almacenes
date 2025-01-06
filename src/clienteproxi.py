@@ -52,6 +52,9 @@ class Inventario:
         datos = {"nombre": nombre}
         respuesta = self.enviar_peticion("/inventario/remove_db", "POST", datos)
         print("Base de datos cambiada." if respuesta else "Error al cambiar la base de datos.")
+    def get_node_name(self):
+        respuesta = self.enviar_peticion("/inventario/get_node_name","GET")
+        print(f"El Id del Nodo es: {respuesta.get('node_name','nodo sin ID ¿?¿')}")
 
     def ver_inventario(self):
         respuesta = self.enviar_peticion("/inventario/ver", "GET")
@@ -79,7 +82,8 @@ class AlmacenCliente:
             print("6. Ver cantidad de objeto")
             print("7. Ver inventario")
             print("8. Cambiar base de datos")
-            print("9. Salir")
+            print("9. Obteber ID del nodo")
+            print("10. Salir")
 
             opcion = input("Selecciona una opción: ")
 
@@ -112,6 +116,8 @@ class AlmacenCliente:
                 nombre = input("Nuevo nombre de la base de datos: ")
                 self.inventario.cambiar_base_datos(nombre)
             elif opcion == "9":
+                self.inventario.get_node_name()
+            elif opcion == "10":
                 print("Saliendo del cliente.")
                 break
             else:

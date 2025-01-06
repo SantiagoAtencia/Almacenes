@@ -3,7 +3,8 @@ import zmq.error
 import json
 from flask import Flask, request, jsonify, render_template
 
-app = Flask(__name__,template_folder= '../templates')
+app = Flask(__name__, template_folder='../templates')
+
 
 def enviar_mensaje(mensaje_dict):
     context = zmq.Context()
@@ -19,7 +20,7 @@ def enviar_mensaje(mensaje_dict):
 
         # Intentar recibir respuesta del servidor
         respuesta_json = socket.recv_json()
-        respuesta=respuesta_json.get("mensaje","No hay mensaje en el JSON")
+        respuesta = respuesta_json.get("mensaje", "No hay mensaje en el JSON")
         print(f"Respuesta recibida: {respuesta}")
         #return json.loads(respuesta)  # Decodificar la respuesta JSON
         return respuesta_json
@@ -28,9 +29,18 @@ def enviar_mensaje(mensaje_dict):
         print("No se recibió respuesta del servidor (timeout)")
         return {"error": "No se recibió respuesta del servidor (timeout)"}
 
+
 @app.route('/')
 def index():
     return render_template('index.html')
+
+@app.route('/inventario/get_node_name', methods=['GET'])
+def get_node_name():
+    mensaje = {
+        "accion": "get_node_name",
+    }
+    respuesta = enviar_mensaje(mensaje)
+    return jsonify(respuesta), 200
 
 @app.route('/inventario/annadir', methods=['POST'])
 def annadir_objeto():
@@ -43,7 +53,8 @@ def annadir_objeto():
         "cantidad": cantidad
     }
     respuesta = enviar_mensaje(mensaje)
-    return jsonify(respuesta)
+    return jsonify(respuesta), 200
+
 
 @app.route('/inventario/sacar', methods=['POST'])
 def sacar_objeto():
@@ -56,7 +67,8 @@ def sacar_objeto():
         "cantidad": cantidad
     }
     respuesta = enviar_mensaje(mensaje)
-    return jsonify(respuesta)
+    return jsonify(respuesta), 200
+
 
 @app.route('/inventario/reservar', methods=['POST'])
 def reservar():
@@ -69,7 +81,8 @@ def reservar():
         "cantidad": cantidad
     }
     respuesta = enviar_mensaje(mensaje)
-    return jsonify(respuesta)
+    return jsonify(respuesta), 200
+
 
 @app.route('/inventario/sacar_reserva', methods=['POST'])
 def sacar_reserva():
@@ -82,7 +95,8 @@ def sacar_reserva():
         "cantidad": cantidad
     }
     respuesta = enviar_mensaje(mensaje)
-    return jsonify(respuesta)
+    return jsonify(respuesta), 200
+
 
 @app.route('/inventario/cancelar_reserva', methods=['POST'])
 def cancelar_reserva():
@@ -95,7 +109,20 @@ def cancelar_reserva():
         "cantidad": cantidad
     }
     respuesta = enviar_mensaje(mensaje)
-    return jsonify(respuesta)
+    return jsonify(respuesta), 200
+
+@app.route('/inventario/get_item_quantity', methods=['POST'])
+def get_item_quantity():
+    datos = request.json
+    nombre = datos.get('nombre')
+
+    mensaje = {
+        "accion": "get_item_quantity",
+        "nombre": nombre
+    }
+    respuesta = enviar_mensaje(mensaje)
+    return jsonify(respuesta), 200
+
 
 @app.route('/inventario/ver', methods=['GET'])
 def ver_inventario():
@@ -103,7 +130,21 @@ def ver_inventario():
         "accion": "ver"
     }
     respuesta = enviar_mensaje(mensaje)
-    return jsonify(respuesta)
+    return jsonify(respuesta), 200
+
+
+@app.route('/inventario/remove_db', methods=['POST'])
+def remove_db():
+    datos = request.json
+    nombre = datos.get('nombre')
+
+    mensaje = {
+        "accion": "remove_db",
+        "nombre": nombre
+    }
+    respuesta = enviar_mensaje(mensaje)
+    return jsonify(respuesta), 200
+
 
 if __name__ == "__main__":
     puerto = int(input("Introduce un puerto para el nodo: "))

@@ -10,7 +10,8 @@ Base = declarative_base()
 # Málaga tiene UTC +1 en horario estándar (invierno)
 malaga_timezone = timezone(timedelta(hours=1))  # UTC +1
 
-NODE_NAME = "nodo1"
+NODE_NAME = "node1"
+
 
 # O para el horario de verano (UTC +2)
 # malaga_timezone = timezone(timedelta(hours=2))  # UTC +2
@@ -22,10 +23,10 @@ class Inventario(Base):
     objeto = Column(String(70), nullable=False)
     cantidad = Column(Integer, nullable=True, default=0)
     reservados = Column(Integer, nullable=True, default=0)
-    CheckConstraint(
+    '''CheckConstraint(
         'cantidad IS NOT NULL OR reservados IS NOT NULL',
         name='check_atributos_no_nulos'
-    )
+    )'''
 
 
 class Movimientos(Base):
@@ -37,10 +38,10 @@ class Movimientos(Base):
     cantidad = Column(Integer, nullable=True, default=0)
     reservados = Column(Integer, nullable=True, default=0)
     fecha = Column(DateTime, default=datetime.now(malaga_timezone), nullable=False)
-    CheckConstraint(
+    '''CheckConstraint(
         'cantidad IS NOT NULL OR reservados IS NOT NULL',
         name='check_atributos_no_nulos'
-    )
+    )'''
     # Relación opcional para acceder al objeto Inventario asociado
     inventario = relationship('Inventario', backref='movimientos')
 
@@ -60,23 +61,23 @@ def cambiar_base_datos(nueva_bd):
 # Inicializar la sesión con la base de datos por defecto
 cambiar_base_datos("almacen.db")
 
+
 def manejar_mensaje(mensaje_json):
     session = Session()
     try:
         mensaje = json.loads(mensaje_json)  # Decodificar mensaje JSON
         accion = mensaje.get("accion")
+
         if not accion:
             return json.dumps({"status": "error", "message": "Acción no especificada"})
 
-        nombre = mensaje.get("nombre")
-        cantidad = int(mensaje.get("cantidad"))
-        if not nombre or cantidad is None:
-            return json.dumps({"status": "error", "message": "Faltan datos: nombre o cantidad"})
-        item = session.query(Inventario).filter_by(objeto=nombre).first()
-
-        if not item:
-            return json.dumps({"status": "error", "message": f"Objeto {nombre} no encontrado en el inventario"})
         if accion == "annadir":
+            nombre = mensaje.get("nombre")
+            cantidad = int(mensaje.get("cantidad"))
+            if not nombre or cantidad is None:
+                return json.dumps({"status": "error", "message": "Faltan datos: nombre o cantidad"})
+
+            item = session.query(Inventario).filter_by(objeto=nombre).first()
             if item:
                 item.cantidad += cantidad
             else:
@@ -93,9 +94,21 @@ def manejar_mensaje(mensaje_json):
             )
             session.add(movimiento)
             session.commit()
-            return json.dumps({"status": "success", "nombre": nombre, "cantidad":item.cantidad,"reservados":item.reservados,"mensaje": f"Objeto {nombre} annadido con cantidad {cantidad}"})
+            return json.dumps(
+                {"status": "success", "nombre": nombre, "cantidad": item.cantidad, "reservados": item.reservados,
+                 "mensaje": f"Objeto {nombre} annadido con cantidad {cantidad}"})
 
         elif accion == "sacar":
+            nombre = mensaje.get("nombre")
+            cantidad = int(mensaje.get("cantidad"))
+            if not nombre or cantidad is None:
+                return json.dumps({"status": "error", "message": "Faltan datos: nombre o cantidad"})
+
+            item = session.query(Inventario).filter_by(objeto=nombre).first()
+
+            if not item:
+                return json.dumps({"status": "error", "message": f"Objeto {nombre} no encontrado en el inventario"})
+
             if item.cantidad < cantidad:
                 return json.dumps({"status": "error", "message": f"Cantidad insuficiente de {nombre} en el inventario"})
 
@@ -107,15 +120,26 @@ def manejar_mensaje(mensaje_json):
                 fecha=datetime.now(malaga_timezone)
             )
             item.cantidad -= cantidad
-            if item.cantidad == 0 and item.reservados == 0:
-                session.delete(item)  # Eliminar el objeto si la cantidad llega a 0
+            '''if item.cantidad == 0 and item.reservados == 0:
+                session.delete(item)  # Eliminar el objeto si la cantidad llega a 0'''
 
             session.add(movimiento)
             session.commit()
 
-            return json.dumps({"status": "success", "nombre": nombre, "cantidad":item.cantidad,"reservados":item.reservados,"mensaje": f"Objeto {nombre} sacado con cantidad {cantidad}"})
+            return json.dumps(
+                {"status": "success", "nombre": nombre, "cantidad": item.cantidad, "reservados": item.reservados,
+                 "mensaje": f"Objeto {nombre} sacado con cantidad {cantidad}"})
 
         if accion == "reservar":
+            nombre = mensaje.get("nombre")
+            cantidad = int(mensaje.get("cantidad"))
+            if not nombre or cantidad is None:
+                return json.dumps({"status": "error", "message": "Faltan datos: nombre o cantidad"})
+
+            item = session.query(Inventario).filter_by(objeto=nombre).first()
+
+            if not item:
+                return json.dumps({"status": "error", "message": f"Objeto {nombre} no encontrado en el inventario"})
             if item.cantidad < cantidad:
                 return json.dumps({"status": "error", "message": f"Cantidad insuficiente de {nombre} para reservar"})
 
@@ -132,11 +156,23 @@ def manejar_mensaje(mensaje_json):
             session.add(movimiento)
             session.commit()
 
-            return json.dumps({"status": "success", "nombre": nombre, "cantidad":item.cantidad,"reservados":item.reservados,"mensaje": f"Objeto {nombre} reservado con cantidad {cantidad}"})
+            return json.dumps(
+                {"status": "success", "nombre": nombre, "cantidad": item.cantidad, "reservados": item.reservados,
+                 "mensaje": f"Objeto {nombre} reservado con cantidad {cantidad}"})
 
         elif accion == "cancelar_reserva":
+            nombre = mensaje.get("nombre")
+            cantidad = int(mensaje.get("cantidad"))
+            if not nombre or cantidad is None:
+                return json.dumps({"status": "error", "message": "Faltan datos: nombre o cantidad"})
+
+            item = session.query(Inventario).filter_by(objeto=nombre).first()
+
+            if not item:
+                return json.dumps({"status": "error", "message": f"Objeto {nombre} no encontrado en el inventario"})
             if item.reservados < cantidad:
-                return json.dumps({"status": "error", "message": f"Cantidad insuficiente de {nombre} reservada para cancelar"})
+                return json.dumps(
+                    {"status": "error", "message": f"Cantidad insuficiente de {nombre} reservada para cancelar"})
 
             item.cantidad += cantidad
             item.reservados -= cantidad
@@ -151,11 +187,23 @@ def manejar_mensaje(mensaje_json):
             session.add(movimiento)
             session.commit()
 
-            return json.dumps({"status": "success", "nombre": nombre, "cantidad":item.cantidad,"reservados":item.reservados,"mensaje": f"Objeto {nombre} reserva cancelada con cantidad {cantidad}"})
+            return json.dumps(
+                {"status": "success", "nombre": nombre, "cantidad": item.cantidad, "reservados": item.reservados,
+                 "mensaje": f"Objeto {nombre} reserva cancelada con cantidad {cantidad}"})
 
         elif accion == "sacar_reserva":
+            nombre = mensaje.get("nombre")
+            cantidad = int(mensaje.get("cantidad"))
+            if not nombre or cantidad is None:
+                return json.dumps({"status": "error", "message": "Faltan datos: nombre o cantidad"})
+
+            item = session.query(Inventario).filter_by(objeto=nombre).first()
+
+            if not item:
+                return json.dumps({"status": "error", "message": f"Objeto {nombre} no encontrado en el inventario"})
             if item.reservados < cantidad:
-                return json.dumps({"status": "error", "message": f"Cantidad insuficiente de {nombre} reservada para retirar"})
+                return json.dumps(
+                    {"status": "error", "message": f"Cantidad insuficiente de {nombre} reservada para retirar"})
 
             item.reservados -= cantidad
 
@@ -169,25 +217,40 @@ def manejar_mensaje(mensaje_json):
             session.add(movimiento)
             session.commit()
 
-            return json.dumps({"status": "success", "nombre": nombre, "cantidad":item.cantidad,"reservados":item.reservados,"mensaje": f"Objeto {nombre} reserva sacada con cantidad {cantidad}"})
+            return json.dumps(
+                {"status": "success", "nombre": nombre, "cantidad": item.cantidad, "reservados": item.reservados,
+                 "mensaje": f"Objeto {nombre} reserva sacada con cantidad {cantidad}"})
         elif accion == "ver":
             contenido = session.query(Inventario).all()
             resultado = [
                 {"nombre": item.objeto, "cantidad": item.cantidad, "reservados": item.reservados}
                 for item in contenido
             ]
+            print(resultado)
             return json.dumps({"status": "success", "inventario": resultado})
 
         elif accion == "get_item_quantity":
+            nombre = mensaje.get("nombre")
+            if nombre is None:
+                return json.dumps({"status": "error", "message": "Falta nombre"})
 
-            return json.dumps({"status": "success", "data": {"nombre": nombre, "cantidad": item.cantidad}})
+            item = session.query(Inventario).filter_by(objeto=nombre).first()
+
+            if not item:
+                return json.dumps({"status": "error", "message": f"Objeto {nombre} no encontrado en el inventario"})
+
+            return json.dumps({"status": "success", "nombre": nombre, "cantidad": item.cantidad})
 
         elif accion == "get_node_name":
-            return json.dumps({"status": "success", "data": {"node_name": NODE_NAME}})
+            return json.dumps({"status": "success", "node_name": NODE_NAME})
 
         elif accion == "remove_db":
-            cambiar_base_datos(f"{nombre}")
-            return json.dumps({"status": "success", "data": {"nombre": nombre, "mensaje": f"Nueva base de datos {nombre}"}})
+            nombre = mensaje.get("nombre")
+            if not nombre:
+                return json.dumps({"status": "error", "message": "Falta nombre"})
+            cambiar_base_datos(f"{nombre}.db")
+            return json.dumps(
+                {"status": "success", "nombre": nombre, "mensaje": f"Nueva base de datos {nombre}"})
 
         else:
             return json.dumps({"status": "error", "message": "Acción no reconocida"})
@@ -198,6 +261,7 @@ def manejar_mensaje(mensaje_json):
 
     finally:
         session.close()
+
 
 def servidor():
     context = zmq.Context()

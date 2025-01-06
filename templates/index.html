@@ -48,13 +48,15 @@
         <button onclick="sacarObjeto()">Sacar objeto</button>
         <button onclick="sacarReserva()">Sacar reserva</button>
         <button onclick="cancelarReserva()">Cancelar reserva</button>
+        <button onclick="getItemQuantity()">Ver cantidad</button>
         <button onclick="verAlmacen()">Ver inventario</button>
+        <button onclick="remove_db()">Cambiar base de datos</button>
 
         <div class="content" id="contenido"></div>
     </div>
 
     <script>
-        const BASE_URL = "http://localhost:5000"; // Cambia esto si tu servidor está en otro puerto o URL
+        const BASE_URL = "http://127.0.0.1:5000"; // Cambia esto si tu servidor está en otro puerto o URL
 
         async function enviarPeticion(endpoint, metodo = "GET", datos = null) {
             const url = `${BASE_URL}${endpoint}`;
@@ -149,6 +151,30 @@
                 mostrarMensaje(respuesta.mensaje);
             }
             await verAlmacen();
+        }
+
+        async function getItemQuantity() {
+            const nombre = document.getElementById("nombre").value;
+            if (!nombre) {
+                mostrarMensaje("Por favor, ingrese un nombre.");
+                return;
+            }
+            const respuesta = await enviarPeticion("/inventario/get_item_quantity", "POST", { nombre });
+            if (respuesta ) {
+                mostrarMensaje(`La cantidad del objeto es: <p>${respuesta.cantidad}</p>`);
+            }
+        }
+
+        async function remove_db() {
+            const nombre = document.getElementById("nombre").value;
+            if (!nombre) {
+                mostrarMensaje("Por favor, ingrese un nombre para la base de datos.");
+                return;
+            }
+            const respuesta = await enviarPeticion("/inventario/remove_db", "POST", { nombre });
+            if (respuesta ) {
+                mostrarMensaje("Base de datos cambiada");
+            }
         }
 
         async function verAlmacen() {

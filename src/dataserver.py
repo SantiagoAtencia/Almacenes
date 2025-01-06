@@ -3,14 +3,14 @@ from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from datetime import datetime, timezone, timedelta
 import zmq
 import json
-import os
-import argparse
+
 # Configuración de SQLAlchemy
 Base = declarative_base()
 
 # Málaga tiene UTC +1 en horario estándar (invierno)
 malaga_timezone = timezone(timedelta(hours=1))  # UTC +1
 
+NODE_NAME = "node1"
 
 
 # O para el horario de verano (UTC +2)
@@ -46,7 +46,7 @@ class Movimientos(Base):
     inventario = relationship('Inventario', backref='movimientos')
 
 
-#engine = create_engine(f'sqlite:///almacen.db')
+engine = create_engine(f'sqlite:///almacen.db')
 
 
 # Función para cambiar la base de datos y crear Session
@@ -59,7 +59,7 @@ def cambiar_base_datos(nueva_bd):
 
 
 # Inicializar la sesión con la base de datos por defecto
-#cambiar_base_datos("almacen.db")
+cambiar_base_datos("almacen.db")
 
 
 def manejar_mensaje(mensaje_json):
@@ -263,12 +263,12 @@ def manejar_mensaje(mensaje_json):
         session.close()
 
 
-def servidor(socket_path):
+def servidor():
     context = zmq.Context()
     socket = context.socket(zmq.REP)  # REP para recibir peticiones y enviar respuestas
-    socket.bind(f"ipc://{socket_path}")  # Enlazar al socket Unix
+    socket.bind("tcp://*:5555")  # Escuchar en el puerto 5555
 
-    print(f"Servidor iniciado y escuchando en {socket_path}")
+    print("Servidor iniciado y esperando mensajes...")
 
     while True:
         try:
@@ -284,26 +284,4 @@ def servidor(socket_path):
 
 
 if __name__ == "__main__":
-    # Parsear argumentos de línea de comandos
-    parser = argparse.ArgumentParser(description="Iniciar servidor de inventario.")
-    parser.add_argument(
-        "directorio",
-        help="Directorio donde se almacenará la base de datos y el socket Unix"
-    )
-    parser.add_argument(
-        "--node-name",
-        required=True,
-        help="Nombre del nodo (NODE_NAME)"
-    )
-    args = parser.parse_args()
-    NODE_NAME = args.node_name
-    # Crear el directorio si no existe
-    os.makedirs(args.directorio, exist_ok=True)
-
-    # Configurar la base de datos
-    db_path = os.path.join(args.directorio, "almacen.db")
-    cambiar_base_datos(db_path)
-
-    # Configurar el socket Unix
-    socket_path = f"/tmp/almacen_{NODE_NAME}.sock"
-    servidor(socket_path)
+    servidor()

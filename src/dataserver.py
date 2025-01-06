@@ -11,7 +11,6 @@ Base = declarative_base()
 # Málaga tiene UTC +1 en horario estándar (invierno)
 malaga_timezone = timezone(timedelta(hours=1))  # UTC +1
 
-NODE_NAME = "node1"
 
 
 # O para el horario de verano (UTC +2)
@@ -291,8 +290,13 @@ if __name__ == "__main__":
         "directorio",
         help="Directorio donde se almacenará la base de datos y el socket Unix"
     )
+    parser.add_argument(
+        "--node-name",
+        required=True,
+        help="Nombre del nodo (NODE_NAME)"
+    )
     args = parser.parse_args()
-
+    NODE_NAME = args.node_name
     # Crear el directorio si no existe
     os.makedirs(args.directorio, exist_ok=True)
 
@@ -303,4 +307,3 @@ if __name__ == "__main__":
     # Configurar el socket Unix
     socket_path = f"/tmp/almacen_{NODE_NAME}.sock"
     servidor(socket_path)
-

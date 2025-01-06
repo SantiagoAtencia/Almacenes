@@ -3,7 +3,8 @@ from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from datetime import datetime, timezone, timedelta
 import zmq
 import json
-
+import os
+import argparse
 # Configuración de SQLAlchemy
 Base = declarative_base()
 
@@ -46,7 +47,7 @@ class Movimientos(Base):
     inventario = relationship('Inventario', backref='movimientos')
 
 
-engine = create_engine(f'sqlite:///almacen.db')
+#engine = create_engine(f'sqlite:///almacen.db')
 
 
 # Función para cambiar la base de datos y crear Session
@@ -59,7 +60,7 @@ def cambiar_base_datos(nueva_bd):
 
 
 # Inicializar la sesión con la base de datos por defecto
-cambiar_base_datos("almacen.db")
+#cambiar_base_datos("almacen.db")
 
 
 def manejar_mensaje(mensaje_json):
@@ -263,12 +264,12 @@ def manejar_mensaje(mensaje_json):
         session.close()
 
 
-def servidor():
+def servidor(socket_path):
     context = zmq.Context()
     socket = context.socket(zmq.REP)  # REP para recibir peticiones y enviar respuestas
-    socket.bind("tcp://*:5555")  # Escuchar en el puerto 5555
+    socket.bind(f"ipc://{socket_path}")  # Enlazar al socket Unix
 
-    print("Servidor iniciado y esperando mensajes...")
+    print(f"Servidor iniciado y escuchando en {socket_path}")
 
     while True:
         try:
@@ -284,4 +285,22 @@ def servidor():
 
 
 if __name__ == "__main__":
-    servidor()
+    # Parsear argumentos de línea de comandos
+    parser = argparse.ArgumentParser(description="Iniciar servidor de inventario.")
+    parser.add_argument(
+        "directorio",
+        help="Directorio donde se almacenará la base de datos y el socket Unix"
+    )
+    args = parser.parse_args()
+
+    # Crear el directorio si no existe
+    os.makedirs(args.directorio, exist_ok=True)
+
+    # Configurar la base de datos
+    db_path = os.path.join(args.directorio, "almacen.db")
+    cambiar_base_datos(db_path)
+
+    # Configurar el socket Unix
+    socket_path = "/tmp/almacen.sock"
+    servidor(socket_path)
+

@@ -1,3 +1,7 @@
 pytest
 pyzmq
 requests
+fastapi[standard]
+nicegui
+psutil
+

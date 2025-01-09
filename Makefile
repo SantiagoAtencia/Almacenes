@@ -1,3 +1,7 @@
+# varaibles
+PORT=5000
+NODE_NAME=nodo1
+
 # Use bash as the shell
 SHELL := /bin/bash
 
@@ -15,14 +19,23 @@ create_venv: $(VENV_DIR)/bin/python
 
 $(VENV_DIR)/bin/python:
 	$(PYTHON) -m venv $(VENV_DIR)
-
+	$(VENV_DIR)/bin/python -m ensurepip --upgrade
 # Target to set up the environment and install dependencies
-setup: create_venv
-	$(ACTIVATE) && pip install -r requirements.txt
+setup: create_venv activate
+	pip install -r requirements.txt
+
+activate:
+	@echo "Activating virtual environment"
+	source $(VENV_DIR)/bin/activate
+
 
 # Target to run tests
 test: setup
-	$(ACTIVATE) && pytest -s --log-cli-level=DEBUG tests/tests_dataserver.py
+	 pytest -s --log-cli-level=DEBUG tests/tests_dataserver.py
+
+run: 
+	PORT=$(PORT) NODE_NAME=$(NODE_NAME) fastapi dev  --host=0.0.0.0 --port=$(PORT) src/webserver.py
+	#PORT=$(PORT) NODE_NAME=$(NODE_NAME) fastapi dev  --port=$(PORT) src/webserver.py
 
 
-.PHONY: setup test create_venv
+.PHONY: setup test create_venv run activate

@@ -1,12 +1,14 @@
 ## resrt_client.py
 # a class whose objects are proxy for remote nodes
 
+import logging
 import requests
 
 class RESTClient:
     def __init__(self, host, port): 
         "initialize the REST client with the host(dns name or IP) and port of the remote node"
         self.adress = f"http://{host}:{port}"
+        logging.debug(f"new REST client : {self.adress}")
     
     def get_info(self):
         "return info: node name, ip, port and list of peers"
@@ -22,7 +24,9 @@ class RESTClient:
     
     def inc_item(self, item, quantity):
         "add quantity of item or creates it"
-        return requests.post(f"{self.adress}/api/items/inc/{item}/{quantity}").json()
+        url=f"{self.adress}/api/items/inc/{item}/{quantity}"
+        logging.debug("request post --->"+ url)
+        return requests.post(url).json()
     
     def dec_item(self, item, quantity):
         "subtract quantity of item error if not enough"

@@ -72,6 +72,7 @@ node.port= PORT # not IP exposed yet
 
 
 
+
 ################# main program  ####################
 app = FastAPI()         # Create FastAPI app   
 
@@ -157,28 +158,29 @@ def item():
                               )
     label_selected =ui.label(f"Selected item: --")
     ## quantity edit box: number to add or subtract:
-    number =ui.number("Quantity", value=0, min=0, step=1)
+    number =ui.number("Quantity to add or substract", value=0, min=0, step=1)
     def add_item():
         "add quantity of item or creates it"
         item = selection_box.value
         quantity = number.value
         logging.debug(f"add_item {item} {quantity}")
-        nodeAPI = node.get_my_RESTClient() # create a REST client to call the API of myself
-        result = nodeAPI.inc_item(item, quantity)
+        # bypass the REST API and call the local function directly
+
+        result = api_router.inc_item(item, quantity)
         ui.notify(result)
         logging.debug(result)
-        ui.open('/ui/item')   # reload ui page:
+        ui.navigate.reload()
     
     def subtract_item():
         "subtract quantity of item error if not enough"
         item = selection_box.value
         quantity = number.value
         logging.debug(f"subtract_item {item} {quantity}")
-        nodeAPI = node.get_my_RESTClient()
-        result = nodeAPI.dec_item(item, quantity)
+        # bypass the REST API and call the local function directly
+        result = api_router.dec_item(item, quantity)
         ui.notify(result)
         logging.debug(result)
-        ui.open('/ui/item') # reload ui page:
+        ui.navigate.reload()
 
     ui.button("Add", on_click= add_item)
     ui.button("Subtract", on_click=subtract_item)

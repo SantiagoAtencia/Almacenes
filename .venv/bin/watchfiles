@@ -1,4 +1,4 @@
-#!/workspaces/Almacenes/.venv/bin/python3
+#!/home/claudio/UMA/almacenes_v2/Almacenes/.venv/bin/python3
 # -*- coding: utf-8 -*-
 import re
 import sys

@@ -21,8 +21,8 @@ $(VENV_DIR)/bin/python:
 	$(PYTHON) -m venv $(VENV_DIR)
 	$(VENV_DIR)/bin/python -m ensurepip --upgrade
 # Target to set up the environment and install dependencies
-setup: create_venv activate
-	pip install -r requirements.txt
+setup: create_venv 
+	$(VENV_DIR)/bin/pip install -r requirements.txt
 
 activate:
 	@echo "Activating virtual environment"

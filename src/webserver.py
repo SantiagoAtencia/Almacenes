@@ -7,11 +7,11 @@
     #  /ui/ main page. Show info: node, peers_list (version). menúfor other pages
     #  /ui/selectIP/ UI select IP
     #  /ui/peer_info/ UI to show info about peer
-    #  /ui/items shows list of items and quantity
-    #  /ui/item/{item} shows quantity of item. 
+    #  /ui/items/ shows list of items and quantity
+    #  /ui/item/ shows quantity of item. 
     #       Dialog, to select o write a new item (combo box)
     #       Dialog to add or subtract quantity to selected item
-    #  /ui/peers/item/{item} shows quantity of item in all peers
+    #  /ui/peers/item/ shows quantity of item in all peers
     #  /ui/join peer: dialog to join to a group of peers
 
 # REST: (in api_route.py module)  /api/...
@@ -105,7 +105,10 @@ def show():
     ui.label(f"Node: {node.name}, IP: {node.ip}, Port: {node.port}")
     ui.label(f"Peers: {node.peers}")
     ui.label(f"Version: {node.version}")
-    ui.link("Select IP", "/ui/selectIP")  # ui.button("Peer Info", onclick=peer_info)
+    ui.link("Select IP", "/ui/selectIP") 
+    ui.link("Inventory", "/ui/items")
+    ui.link("Item", "/ui/item")
+     # ui.button("Peer Info", onclick=peer_info)
    # ui.button("All Items inventory", onclick=items)
    
 # Select IP page
@@ -128,6 +131,59 @@ def selectIP():
         current_label.text = "Current exported IP: " + ip
 
 
+@ui.page('/ui/items')
+def items():
+    "shows list of items and quantity"
+    ui.label("Inventory")
+    for item, quantity in node.inventory.items():
+        ui.label(f"{item}: {quantity}")
+    
+#  /ui/item/{item} shows quantity of item. 
+    #       Dialog, to select o write a new item (combo box)
+    #       Dialog to add or subtract quantity to selected item
+@ui.page('/ui/item')
+def item():
+    "shows quantity of item. Dialog, to select o write a new item (combo box). Dialog to add or subtract quantity to selected item"
+    ui.label("Select item or enter a new one")
+    item_list = list(node.inventory.keys())
+    def update(e):
+        item = e.value
+        ui.notify(f'New value entered: {item}')
+        logging.debug(f"selected_item={item}")
+        label_selected.text = f"Selected item: {item}, Quantity: {node.inventory.get(item, 0)}"
+    selection_box= ui.select(item_list, 
+                              new_value_mode= 'add-unique', 
+                              on_change=update
+                              )
+    label_selected =ui.label(f"Selected item: --")
+    ## quantity edit box: number to add or subtract:
+    number =ui.number("Quantity", value=0, min=0, step=1)
+    def add_item():
+        "add quantity of item or creates it"
+        item = selection_box.value
+        quantity = number.value
+        logging.debug(f"add_item {item} {quantity}")
+        nodeAPI = node.get_my_RESTClient() # create a REST client to call the API of myself
+        result = nodeAPI.inc_item(item, quantity)
+        ui.notify(result)
+        logging.debug(result)
+        ui.open('/ui/item')   # reload ui page:
+    
+    def subtract_item():
+        "subtract quantity of item error if not enough"
+        item = selection_box.value
+        quantity = number.value
+        logging.debug(f"subtract_item {item} {quantity}")
+        nodeAPI = node.get_my_RESTClient()
+        result = nodeAPI.dec_item(item, quantity)
+        ui.notify(result)
+        logging.debug(result)
+        ui.open('/ui/item') # reload ui page:
+
+    ui.button("Add", on_click= add_item)
+    ui.button("Subtract", on_click=subtract_item)
+
+    
 
 
 

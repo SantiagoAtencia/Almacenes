@@ -12,7 +12,7 @@
     #       Dialog, to select o write a new item (combo box)
     #       Dialog to add or subtract quantity to selected item
     #  /ui/peers/item/ shows quantity of item in all peers
-    #  /ui/join peer: dialog to join to a group of peers
+    #  /ui/join  dialog to join to a group of peers
 
 # REST: (in api_route.py module)  /api/...
     # GET:
@@ -22,6 +22,7 @@
     # POST: 
     # /items/inc/{item}/{quantity}: add quantity of item
     # /items/dec/{item}/{quantity}: subtract quantity of item
+    # /join/{peer_name}/{peer_ip}/{peer_port}: join to the list of peers
 
 ## data: Node:(name, ip, port)  IP is the exposed IP. If IP="" no exposed IP
 ## local_data: dictionary {item,quantity}.
@@ -35,6 +36,7 @@
 # class node, all local node data, dataclass
 import logging
 import os
+import signal
 import psutil
 from dataclasses import dataclass
 import socket
@@ -65,12 +67,9 @@ PORT = os.getenv("PORT")
 if (PORT is None or PORT==""):
     logging.error("PORT environment variable not set")
     exit(1)
-logging.info(f"NODE_NAME={NODE_NAME}, PORT={PORT}")
+logging.info(f"NODE_NAME={NODE_NAME}, PORT={PORT}") 
 
-node.name= NODE_NAME  
-node.port= PORT # not IP exposed yet
-
-
+node.init(NODE_NAME, int(PORT)) #initialize the node with name, ip and port, loads
 
 
 ################# main program  ####################
@@ -107,8 +106,12 @@ def show():
     ui.label(f"Peers: {node.peers}")
     ui.label(f"Version: {node.version}")
     ui.link("Select IP", "/ui/selectIP") 
+    ui.link("Join to a group of peers", "/ui/join")
     ui.link("Inventory", "/ui/items")
     ui.link("Item", "/ui/item")
+    #API docs
+    ui.link("API docs", "/docs")
+    ui.link("Stop the server", "/ui/stop")
      # ui.button("Peer Info", onclick=peer_info)
    # ui.button("All Items inventory", onclick=items)
    
@@ -127,7 +130,7 @@ def selectIP():
     def update(ip):
         global node
         node.ip = ip
-        node.peers[node.name] = (node.ip, node.port)
+        node.add_peer(node.name, ip, node.port) # update peers list an save to file
         logging.debug(f"selected_ip={ip}")
         current_label.text = "Current exported IP: " + ip
 
@@ -185,9 +188,37 @@ def item():
     ui.button("Add", on_click= add_item)
     ui.button("Subtract", on_click=subtract_item)
 
-    
 
 
+
+@ui.page('/ui/stop')
+def stop():
+    "stop the node"
+    ui.label("Stop the node")
+    def stop():
+        "stop the node"
+        logging.debug("stop the node")
+        ui.notify("Stopping the server")
+        #stop the niceGui and FastAPI properly
+        os.kill(os.getpid(), signal.SIGINT)
+        os._exit(0)
+    ui.button("Stop", on_click= stop)
+
+ #  /ui/join  dialog to join to a group of peers
+@ui.page('/ui/join')
+def join():
+    "dialog to join to a group of peers"
+    ui.label("Join to a group of peers. IP and port of the peer")
+    peer_ip = ui.textarea("Peer hostname or IP")
+    peer_port = ui.number("Peer Port", value=0, min=0, step=1)
+    def join():
+        "join to a group of peers"
+        logging.debug(f"ui join to {peer_ip.value}:{peer_port.value}")
+        # bypass the REST API and call the local function directly
+        node.join_to_peer(peer_ip.value, int(peer_port.value))
+        
+        ui.navigate.to("/ui")
+    ui.button("Join", on_click= join)
 
 
 # Integrate with your FastAPI Application
